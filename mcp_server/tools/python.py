@@ -25,6 +25,7 @@ SAFE_ENV_VARS = {
     "PYTHON_VERSION",
     "PYTHONPATH",
     "TZ",
+    "USER_AGENT",
 }
 
 def create_safe_env() -> dict[str, str]:
