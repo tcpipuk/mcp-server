@@ -21,15 +21,8 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 FROM python:3.13-slim-bookworm
 WORKDIR /app
 
-# Install necessary system packages for namespace isolation
-RUN apt-get update && apt-get install -y cgroup-tools && rm -rf /var/lib/apt/lists/*
-
 # Create non-root user
 RUN groupadd -r app && useradd -r -g app app
-
-# Set up cgroups for sandbox limits
-RUN mkdir -p /sys/fs/cgroup/python-sandbox && \
-  chown -R app:app /sys/fs/cgroup/python-sandbox
 
 # Create a separate sandbox environment and install Ruff for linting
 RUN python -m venv /app/sandbox-venv && \
@@ -41,10 +34,6 @@ WORKDIR /app
 COPY --from=uv --chown=app:app /app/mcp_server /app/mcp_server
 COPY --from=uv --chown=app:app /app/pyproject.toml /app/
 COPY --from=uv --chown=app:app /app/.venv /app/.venv
-
-# Set up cgroup limits for memory and CPU
-RUN echo "500M" > /sys/fs/cgroup/python-sandbox/memory.max && \
-  echo "100000 100000" > /sys/fs/cgroup/python-sandbox/cpu.max
 
 # Switch to non-root user
 USER app
