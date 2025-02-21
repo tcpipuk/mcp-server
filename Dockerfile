@@ -27,7 +27,7 @@ WORKDIR /app
 RUN groupadd -r app && useradd -r -g app app
 
 # Copy the project files
-COPY --from=uv --chown=app:app /app/src /app/src
+COPY --from=uv --chown=app:app /app/mcp_server /app/mcp_server
 COPY --from=uv --chown=app:app /app/pyproject.toml /app/
 COPY --from=uv --chown=app:app /app/.venv /app/.venv
 
