@@ -70,6 +70,7 @@ async def tool_python(code: str, timeout: int = 5, lint: bool = False) -> str:
         result = await run_sandboxed(code, cmd)
         return result or "No issues found!"
 
+    # Chain unshare with setpriv to isolate Python before execution
     cmd = [
         "unshare",
         "--net",  # New network namespace
@@ -78,6 +79,12 @@ async def tool_python(code: str, timeout: int = 5, lint: bool = False) -> str:
         "--mount",  # New mount namespace
         "--uts",  # New UTS namespace
         "--fork",  # Fork before executing
+        "setpriv",
+        "--no-new-privileges",  # Prevent gaining new privileges via setuid, etc
+        "--clear-groups",  # Remove any supplementary groups
+        "--inh-caps=-all",  # Drop all Linux capabilities
+        "--uid=nobody",  # Run as unprivileged 'nobody' user
+        "--regid=nogroup",  # Run as unprivileged 'nogroup' group
         os_environ["SANDBOX_PYTHON"],  # Use sandbox Python
     ]
     return await run_sandboxed(code, cmd, timeout)
