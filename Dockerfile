@@ -21,6 +21,11 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 FROM python:3.13-slim-bookworm
 WORKDIR /app
 
+# Install necessary system packages for namespace isolation
+RUN apt-get update && apt-get install -y \
+    libcap2-bin
+    && rm -rf /var/lib/apt/lists/*
+
 # Set capabilities on unshare BEFORE dropping privileges
 RUN setcap cap_sys_chroot,cap_sys_ptrace+ep /usr/bin/unshare
 
