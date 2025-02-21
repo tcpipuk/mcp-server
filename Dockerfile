@@ -32,6 +32,11 @@ RUN setcap cap_sys_chroot,cap_sys_ptrace+ep /usr/bin/unshare
 # Create non-root user
 RUN groupadd -r app && useradd -r -g app app
 
+# Ensure unshare is executable by app user
+RUN chmod +x /usr/bin/unshare && \
+    chown root:app /usr/bin/unshare && \
+    chmod 750 /usr/bin/unshare
+
 # Create a separate sandbox environment and install Ruff for linting
 RUN python -m venv /app/sandbox-venv && \
   /app/sandbox-venv/bin/pip install ruff
