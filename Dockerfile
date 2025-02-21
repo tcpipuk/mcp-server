@@ -21,12 +21,24 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 FROM python:3.13-slim-bookworm
 WORKDIR /app
 
+# Install build dependencies for numpy/pandas
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/*
+
 # Create non-root user
 RUN groupadd -r app && useradd -r -g app app
 
-# Create a separate sandbox environment and install Ruff for linting
+# Create and populate sandbox environment
 RUN python -m venv /app/sandbox-venv && \
-    /app/sandbox-venv/bin/pip install ruff
+    /app/sandbox-venv/bin/pip install --no-cache-dir \
+        aiodns \
+        aiohttp \
+        ruff \
+        numpy \
+        pandas \
+        requests \
+    && rm -rf /root/.cache
 
 # Copy project files from the build stage
 COPY --from=uv --chown=app:app /app/mcp_server /app/mcp_server
