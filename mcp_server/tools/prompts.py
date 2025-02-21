@@ -1,7 +1,8 @@
 """
 Tools prompt definitions for the MCP fetch server.
 
-Contains constant definitions that define available tools for fetching and linking content.
+Contains constant definitions that define available tools for fetching,
+linking, executing and linting Python code.
 """
 
 from typing import Final
@@ -40,7 +41,7 @@ TOOLS: Final[list[Tool]] = [
         description=(
             "Fetch a list of links from a webpage. Useful to discover related pages and understand "
             "the structure when exploring a website. By default, includes the text from the link, "
-            "which may provide helpful context. You could then `fetch` URLs to see the content,"
+            "which may provide helpful context. You could then `fetch` URLs to see the content, "
             "as you're not limited in how many tools you can use."
         ),
         inputSchema={
@@ -59,6 +60,30 @@ TOOLS: Final[list[Tool]] = [
                 },
             },
             "required": ["url"],
+        },
+    ),
+    Tool(
+        name="python",
+        description=(
+            "Execute or lint Python code in a sandboxed environment. Depending on the input "
+            "parameters, this tool either runs the code or lints it with Ruff."
+        ),
+        inputSchema={
+            "type": "object",
+            "properties": {
+                "code": {"type": "string", "description": "Python code to execute or lint"},
+                "timeout": {
+                    "type": "integer",
+                    "default": 5,
+                    "description": "Timeout in seconds for code execution (ignored if lint is true)",
+                },
+                "lint": {
+                    "type": "boolean",
+                    "default": False,
+                    "description": "If true, lint the code using Ruff instead of executing it",
+                },
+            },
+            "required": ["code"],
         },
     ),
 ]
