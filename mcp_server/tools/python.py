@@ -23,9 +23,20 @@ def limit_resources() -> None:
     resource.setrlimit(resource.RLIMIT_FSIZE, (50 * 1024 * 1024, 50 * 1024 * 1024))
     resource.setrlimit(resource.RLIMIT_CORE, (0, 0))
 
-async def run_sandboxed(code: str, cmd: list[str], timeout: int | None = None) -> str:
+async def run_sandboxed(
+    code: str, 
+    cmd: list[str], 
+    timeout: int | None = None, 
+    apply_limits: bool = False
+) -> str:
     """
     Run a command on a temporary file containing the provided code.
+
+    Args:
+        code: The Python code to write to a file
+        cmd: The command to run (will be passed the temp file path)
+        timeout: Optional timeout in seconds
+        apply_limits: Whether to apply resource limits (for Python execution)
     """
     with TemporaryDirectory() as tmpdir:
         script_path = Path(tmpdir) / "script.py"
@@ -37,7 +48,7 @@ async def run_sandboxed(code: str, cmd: list[str], timeout: int | None = None) -
                 str(script_path),
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
-                preexec_fn=limit_resources,  # Apply limits before exec
+                preexec_fn=limit_resources if apply_limits else None,
             )
             try:
                 stdout, stderr = await wait_for(proc.communicate(), timeout=timeout)
@@ -60,9 +71,9 @@ async def tool_python(code: str, timeout: int = 5, lint: bool = False) -> str:
     """
     if lint:
         cmd = [os_environ["SANDBOX_RUFF"], "check", "--output-format", "json"]
-        result = await run_sandboxed(code, cmd)
+        result = await run_sandboxed(code, cmd, apply_limits=False)
         return result or "No issues found!"
 
-    # Run sandboxed Python
+    # Apply resource limits only for Python execution
     cmd = [os_environ["SANDBOX_PYTHON"]]
-    return await run_sandboxed(code, cmd, timeout)
+    return await run_sandboxed(code, cmd, timeout, apply_limits=True)
