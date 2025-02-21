@@ -23,7 +23,7 @@ WORKDIR /app
 
 # Install necessary system packages for namespace isolation
 RUN apt-get update && apt-get install -y \
-    libcap2-bin
+    libcap2-bin \
     && rm -rf /var/lib/apt/lists/*
 
 # Set capabilities on unshare BEFORE dropping privileges
