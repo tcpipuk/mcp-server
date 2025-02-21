@@ -54,7 +54,8 @@ USER app
 # Place executables in the environment at the front of the PATH
 ENV PATH="/app/.venv/bin:/app/sandbox-venv/bin:$PATH"
 
-# Configure sandbox environment variables for tool use
+# Configure environment variables for tool use
+ENV RUFF_CACHE_DIR=/tmp/.ruff_cache
 ENV SANDBOX_PYTHON="/app/sandbox-venv/bin/python"
 ENV SANDBOX_RUFF="/app/sandbox-venv/bin/ruff"
 
