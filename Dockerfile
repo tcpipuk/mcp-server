@@ -21,6 +21,9 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 FROM python:3.13-slim-bookworm
 WORKDIR /app
 
+# Set capabilities on unshare BEFORE dropping privileges
+RUN setcap cap_sys_chroot,cap_sys_ptrace+ep /usr/bin/unshare
+
 # Create non-root user
 RUN groupadd -r app && useradd -r -g app app
 
