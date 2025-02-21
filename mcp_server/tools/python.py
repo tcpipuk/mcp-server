@@ -66,7 +66,7 @@ async def tool_python(code: str, timeout: int = 5, lint: bool = False) -> str:
         The output of code execution or the linting result.
     """
     if lint:
-        cmd = [os_environ["SANDBOX_RUFF"], "check", "--format=text"]
+        cmd = [os_environ["SANDBOX_RUFF"], "check", "--output-format", "text"]
         result = await run_sandboxed(code, cmd)
         return result or "No issues found!"
 
