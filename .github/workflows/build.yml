@@ -29,7 +29,7 @@ jobs:
             type=raw,value=latest,enable={{is_default_branch}}
             type=ref,event=branch
             type=ref,event=tag
-            type=sha,prefix={{branch}}-
+            type=sha,prefix={{ref}}-
 
       - name: Log in to GitHub Container Registry
         if: github.event_name != 'pull_request'
