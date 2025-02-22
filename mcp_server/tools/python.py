@@ -76,8 +76,9 @@ print("Starting imports...")
                 str(script_path),
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
-                preexec_fn=limit_resources,
-                cwd=str(run_dir),  # Set working directory explicitly
+                preexec_fn=setup_sandbox,
+                env=create_safe_env(),
+                cwd=str(run_dir),
             )
             try:
                 stdout, stderr = await wait_for(proc.communicate(), timeout=timeout)
