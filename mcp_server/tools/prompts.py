@@ -65,22 +65,29 @@ TOOLS: Final[list[Tool]] = [
     Tool(
         name="python",
         description=(
-            "Execute or lint Python code in a sandboxed environment. Depending on the input "
-            "parameters, this tool either runs the code or lints it with Ruff."
+            "Execute or lint Python code in a resource-limited sandbox. "
+            "It has internet access, with aiodns, aiohttp, bs4, numpy, pandas, and "
+            "requests installed, so you can now test and solve a number of problems "
+            "without needing to directly calculate it yourself. Depending on "
+            "your input parameters, this tool either runs the code or lints with Ruff, "
+            "so you can test code before running, or use Ruff to help debugging if "
+            "you get errors. The user can see the code you've submitted and the "
+            "raw returned response, but it's good etiquette to briefly summarise after "
+            "using this tool what you asked for and got back."
         ),
         inputSchema={
             "type": "object",
             "properties": {
-                "code": {"type": "string", "description": "Python code to execute or lint"},
+                "code": {"type": "string", "description": "Python code to use"},
                 "timeout": {
                     "type": "integer",
-                    "default": 5,
-                    "description": "Timeout in seconds for code execution (ignored if lint is true)",
+                    "default": 10,
+                    "description": "Timeout in seconds for execution (ignored when linting)",
                 },
                 "lint": {
                     "type": "boolean",
                     "default": False,
-                    "description": "If true, lint the code using Ruff instead of executing it",
+                    "description": "Lint the code using Ruff instead of executing it",
                 },
             },
             "required": ["code"],
