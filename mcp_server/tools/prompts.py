@@ -11,55 +11,48 @@ from mcp.types import Tool
 
 TOOLS: Final[list[Tool]] = [
     Tool(
-        name="fetch",
+        name="web",
         description=(
-            "Read content from a real internet URL. By default, this tool attempts to clean pages "
-            "and format in markdown for efficiency, removing non-content like navigation or ads to "
-            "make your job easier. If asked to find something on a website, you can combine with "
-            "the `links` tool to explore a website to find the content you need."
+            "Use to access the internet when up-to-date information may help. You can "
+            "navigate documentation, or fetch code and data from the web, so use it "
+            "whenever fresh information from the internet could potentially improve "
+            "the accuracy of your answer to the user."
         ),
         inputSchema={
             "type": "object",
             "properties": {
-                "url": {"type": "string", "description": "URL to fetch"},
+                "url": {
+                    "type": "string",
+                    "description": (
+                        "The URL to access. This can be any public web address, an API GET "
+                        "endpoint, or even a location of a text/code file on GitHub, etc."
+                    ),
+                },
+                "mode": {
+                    "type": "string",
+                    "enum": ["markdown", "raw", "links"],
+                    "default": "markdown",
+                    "description": (
+                        "Determines how to process the content:\n"
+                        "'markdown' formats a HTML page into efficient markdown, removing "
+                        "headers, navigation, ads, etc, so ideal for normal web pages;\n"
+                        "'raw' returns the unprocessed content, if you need to see raw HTML, "
+                        "or code, XML, JSON, etc.;\n"
+                        "'links' extracts a list of hyperlinks (with anchor text) from a HTML page, "
+                        "which can help you understand site structure or navigate documentation."
+                    ),
+                },
                 "max_length": {
                     "type": "integer",
                     "default": 0,
-                    "description": "Max characters to return (0 is unlimited)",
-                },
-                "raw": {
-                    "type": "boolean",
-                    "default": False,
-                    "description": "Get raw content instead of cleaning/extracting to markdown",
-                },
-            },
-            "required": ["url"],
-        },
-    ),
-    Tool(
-        name="links",
-        description=(
-            "Fetch a list of links from a webpage. Useful to discover related pages and understand "
-            "the structure when exploring a website. By default, includes the text from the link, "
-            "which may provide helpful context. You could then `fetch` URLs to see the content, "
-            "as you're not limited in how many tools you can use."
-        ),
-        inputSchema={
-            "type": "object",
-            "properties": {
-                "url": {"type": "string", "description": "URL to scrape for links"},
-                "max_links": {
-                    "type": "integer",
-                    "default": 100,
-                    "description": "Maximum number of URLs to return",
-                },
-                "titles": {
-                    "type": "boolean",
-                    "default": True,
-                    "description": "Include the anchor text for each link",
+                    "description": (
+                        "Limits the number of characters returned. A value of 0 means no limit. "
+                        "You could use this if you're only interested in the start of a file, but it's "
+                        "better to err on the side of having more context."
+                    ),
                 },
             },
-            "required": ["url"],
+            "required": ["url", "mode"],
         },
     ),
     Tool(
@@ -78,7 +71,10 @@ TOOLS: Final[list[Tool]] = [
         inputSchema={
             "type": "object",
             "properties": {
-                "code": {"type": "string", "description": "Python code to use"},
+                "code": {
+                    "type": "string",
+                    "description": "Python code to use",
+                },
                 "timeout": {
                     "type": "integer",
                     "default": 10,
