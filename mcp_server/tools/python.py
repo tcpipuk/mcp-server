@@ -40,7 +40,7 @@ def setup_sandbox() -> None:
     # Set resource limits
     resource.setrlimit(resource.RLIMIT_AS, (MEMORY_LIMIT, MEMORY_LIMIT))
     resource.setrlimit(resource.RLIMIT_CPU, (CPU_TIME_LIMIT, CPU_TIME_LIMIT))
-    resource.setrlimit(resource.RLIMIT_NPROC, (1, 1))
+    resource.setrlimit(resource.RLIMIT_NPROC, (20, 20))
     resource.setrlimit(resource.RLIMIT_FSIZE, (50 * 1024 * 1024, 50 * 1024 * 1024))
     resource.setrlimit(resource.RLIMIT_CORE, (0, 0))
     
