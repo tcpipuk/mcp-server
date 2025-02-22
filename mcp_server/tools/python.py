@@ -52,18 +52,23 @@ def setup_sandbox() -> None:
 async def run_sandboxed(code: str, cmd: list[str], timeout: int | None = None) -> str:
     """
     Run a command on a temporary file containing the provided code.
-
-    Args:
-        code: The Python code to write to a file
-        cmd: The command to run (will be passed the temp file path)
-        timeout: Optional timeout in seconds
-
-    Returns:
-        The command output, with any errors appended
     """
-    with TemporaryDirectory(dir="/tmp") as tmpdir:
-        script_path = Path(tmpdir) / "script.py"
-        script_path.write_text(code)
+    with TemporaryDirectory() as tmpdir:
+        # Create a specific subdirectory for the script
+        run_dir = Path(tmpdir) / "run"
+        run_dir.mkdir()
+        script_path = run_dir / "usercode.py"
+        
+        # Add some debug output
+        wrapped_code = """
+import sys
+import os
+print("Python Path:", sys.path)
+print("Working Directory:", os.getcwd())
+print("Starting imports...")
+""" + code
+
+        script_path.write_text(wrapped_code)
 
         try:
             proc = await create_subprocess_exec(
@@ -71,11 +76,9 @@ async def run_sandboxed(code: str, cmd: list[str], timeout: int | None = None) -
                 str(script_path),
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
-                preexec_fn=setup_sandbox,
-                env=create_safe_env(),
-                cwd=tmpdir,
+                preexec_fn=limit_resources,
+                cwd=str(run_dir),  # Set working directory explicitly
             )
-            
             try:
                 stdout, stderr = await wait_for(proc.communicate(), timeout=timeout)
                 output = stdout.decode()
