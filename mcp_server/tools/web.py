@@ -87,47 +87,48 @@ def parse_links(html: str, base_url: str) -> dict[str, str]:
 
 async def tool_web(url: str, mode: str = "markdown", max_length: int = 0) -> str:
     """
-    Access and process web content from a URL.
+    Access and process web content from a given URL.
 
     The processing behavior depends on the mode:
       - "markdown": Fetch the URL and extract content formatted as markdown.
       - "raw": Fetch the URL and return the raw content.
-      - "links": Fetch the URL and extract internal links along with their anchor text.
+      - "links": Fetch the URL and extract internal links along with their anchor text,
+         making sure not to break a line in the middle if a character limit is set.
 
     Args:
         url: The URL to process.
         mode: The content processing mode ("markdown", "raw", or "links").
-        max_length: Maximum characters to return (0 means unlimited).
+        max_length: Maximum number of characters to return (0 means unlimited).
 
     Returns:
         A string representation of the processed content.
 
     Raises:
-        ValueError: If an invalid mode is specified.
-        McpError: If link extraction fails due to lack of detectable links.
+        McpError: If an invalid mode is specified or if link extraction fails.
     """
-    if mode in ("raw", "markdown"):
-        downloaded = await get_request(url)
+    downloaded = await get_request(url)
 
-        if mode == "raw":
-            extracted = downloaded
-        else:  # mode == "markdown"
-            extracted = trafilatura_extract(
+    if mode == "raw":
+        extracted = downloaded
+
+    elif mode == "markdown":
+        extracted = trafilatura_extract(
+            downloaded,
+            output_format="markdown",
+            include_formatting=True,
+            include_images=True,
+            include_links=True,
+            include_tables=True,
+            with_metadata=True,
+        )
+        if extracted is None:
+            extracted = add_error(
                 downloaded,
-                output_format="markdown",
-                include_formatting=True,
-                include_images=True,
-                include_links=True,
-                include_tables=True,
-                with_metadata=True,
+                "Extraction to markdown failed; returning raw content",
+                append=False,
             )
-            if extracted is None:
-                extracted = add_error(
-                    downloaded,
-                    "Extraction to markdown failed; returning raw content",
-                    append=False,
-                )
 
+    if mode in ("raw", "markdown"):
         if max_length > 0 and len(extracted) > max_length:
             extracted = add_error(
                 extracted[:max_length],
@@ -138,39 +139,36 @@ async def tool_web(url: str, mode: str = "markdown", max_length: int = 0) -> str
         return f"Contents of {url}:\n\n{extracted}"
 
     elif mode == "links":
-        html = await get_request(url)
-        links = parse_links(html, url)
+        links = parse_links(downloaded, url)
 
         if not links:
             raise McpError(
                 ErrorData(
                     code=INTERNAL_ERROR,
-                    message=f"No links read on {url} - it may require JavaScript or authentication.",
+                    message=f"No links found on {url} - it may require JavaScript or authentication.",
                 )
             )
 
-        total_links = len(links)
-        summary_line = f"All {total_links} links found on {url}\n"
-        lines = [summary_line]
-
+        header = f"All {len(links)} links found on {url}"
+        output = header + "\n"
+        # For links mode, we add full lines until the next line would exceed max_length.
         for link_url, title in links.items():
             if title:
-                lines.append(f"- {title}: {link_url}")
+                line = f"- {title}: {link_url}"
             else:
-                lines.append(f"- {link_url}")
+                line = f"- {link_url}"
 
-        result = "\n".join(lines)
+            # Check if adding this line (plus newline) would exceed the max_length.
+            if max_length > 0 and len(output) + len(line) + 1 > max_length:
+                break
+            output += line + "\n"
 
-        if max_length > 0 and len(result) > max_length:
-            result = add_error(
-                result[:max_length],
-                f"Content truncated. The output has been limited to {max_length} characters",
-                append=True,
-            )
-
-        return result
+        return output
 
     else:
-        raise ValueError(
-            f"Invalid mode '{mode}'. Expected one of: 'markdown', 'raw', or 'links'."
+        raise McpError(
+            ErrorData(
+                code=INTERNAL_ERROR,
+                message=(f"Invalid mode '{mode}'. Expected one of: 'markdown', 'raw', or 'links'."),
+            )
         )
