@@ -21,7 +21,7 @@ from starlette.routing import Mount, Route
 from uvicorn import Config as UvicornConfig
 from uvicorn import Server as UvicornServer
 
-from .tools import TOOLS, tool_fetch, tool_links
+from .tools import TOOLS, tool_fetch, tool_links, tool_python
 
 if TYPE_CHECKING:
     from starlette.requests import Request
@@ -59,7 +59,7 @@ async def serve() -> None:
         Raises:
             McpError: If the tool is unknown or fails to execute.
         """
-        for tool_name, tool_func in {"fetch": tool_fetch, "links": tool_links}.items():
+        for tool_name, tool_func in {"fetch": tool_fetch, "links": tool_links, "python": tool_python}.items():
             if name == tool_name:
                 try:
                     return [TextContent(type="text", text=await tool_func(**arguments))]

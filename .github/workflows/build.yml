@@ -5,11 +5,7 @@ concurrency:
 
 on:
   push:
-    paths:
-      - "*"
   pull_request:
-    paths:
-      - "*"
   workflow_dispatch:
 
 jobs:
@@ -32,8 +28,9 @@ jobs:
           tags: |
             type=raw,value=latest,enable={{is_default_branch}}
             type=ref,event=branch
+            type=ref,event=pr
             type=ref,event=tag
-            type=sha,prefix={{branch}}-
+            type=sha,prefix=${{ github.event_name == 'pull_request' && 'pr-' || github.ref_name }}-
 
       - name: Log in to GitHub Container Registry
         if: github.event_name != 'pull_request'
