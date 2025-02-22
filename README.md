@@ -18,9 +18,8 @@ The server provides tools for web content retrieval and code execution:
 
 | Tool | Description |
 |------|-------------|
-| [fetch](docs/fetch.md) | Fetches and processes content from a given URL. By default, it cleans the content into markdown format, making it easier to read, with an option to return the raw data. |
-| [links](docs/links.md) | Extracts and sorts internal links from a webpage. It returns the links along with their frequency and (optionally) the anchor text. |
-| [python](docs/python.md) | Executes or lints Python code in a resource-limited sandbox. Includes useful packages like numpy and pandas, with options to either run the code or check it with Ruff. |
+| [python](docs/python.md)| Executes or lints Python code in a resource-limited sandbox. Includes useful packages like numpy and pandas, with options to either run the code or check it with Ruff. |
+| [web](docs/web.md) | Accesses and processes content from a given URL. Depending on the mode ('markdown', 'raw', or 'links'), it can clean and format page content into markdown, return the raw unprocessed data, or extract internal links with their anchor text to facilitate further navigation. |
 
 ## 🏎️ How can I run it?
 
