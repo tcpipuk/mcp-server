@@ -140,7 +140,7 @@ async def tool_web(url: str, mode: str = "markdown", max_length: int = 0) -> str
 
     elif mode == "links":
         links = parse_links(downloaded, url)
-
+        total_links = len(links)
         if not links:
             raise McpError(
                 ErrorData(
@@ -149,20 +149,39 @@ async def tool_web(url: str, mode: str = "markdown", max_length: int = 0) -> str
                 )
             )
 
-        header = f"All {len(links)} links found on {url}"
-        output = header + "\n"
-        # For links mode, we add full lines until the next line would exceed max_length.
+        # Prepare link lines.
+        link_lines = []
         for link_url, title in links.items():
             if title:
                 line = f"- {title}: {link_url}"
             else:
                 line = f"- {link_url}"
+            link_lines.append(line)
 
-            # Check if adding this line (plus newline) would exceed the max_length.
-            if max_length > 0 and len(output) + len(line) + 1 > max_length:
+        # Build output with header.
+        output_lines = []
+        cumulative_length = 0
+
+        # We'll decide how many full lines can be added without exceeding max_length.
+        added_count = 0
+        for line in link_lines:
+            # If adding this line (and a newline) would exceed max_length, stop.
+            # Note: if max_length == 0 then there's no limit.
+            projected_length = cumulative_length + len(line) + 1  # +1 for the newline.
+            if max_length > 0 and projected_length > max_length:
                 break
-            output += line + "\n"
+            output_lines.append(line)
+            cumulative_length = projected_length
+            added_count += 1
 
+        # Set an appropriate header.
+        if added_count < total_links:
+            header = f"{added_count} of {total_links} links returned on {url}"
+        else:
+            header = f"All {total_links} links found on {url}"
+
+        header_line = header + "\n"
+        output = header_line + "\n".join(output_lines)
         return output
 
     else:
