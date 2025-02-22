@@ -22,6 +22,7 @@ CPU_TIME_LIMIT = 600  # seconds
 # Safe environment variables to expose to sandboxed code
 SAFE_ENV_VARS = {
     "LANG",
+    "OPENBLAS_NUM_THREADS",
     "PYTHON_VERSION",
     "PYTHONPATH",
     "TZ",
