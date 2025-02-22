@@ -58,17 +58,7 @@ async def run_sandboxed(code: str, cmd: list[str], timeout: int | None = None) -
         run_dir = Path(tmpdir) / "run"
         run_dir.mkdir()
         script_path = run_dir / "usercode.py"
-        
-        # Add some debug output
-        wrapped_code = """
-import sys
-import os
-print("Python Path:", sys.path)
-print("Working Directory:", os.getcwd())
-print("Starting imports...")
-""" + code
-
-        script_path.write_text(wrapped_code)
+        script_path.write_text(code)
 
         try:
             proc = await create_subprocess_exec(
