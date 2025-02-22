@@ -14,13 +14,13 @@ easier for LLMs to understand, and provides informative errors when things go wr
 
 ## 🛠️ What tools does this server offer?
 
-Right now it focuses on helping AIs read web pages, so they can fetch content, find links, and
-explore websites on their own:
+The server provides tools for web content retrieval and code execution:
 
 | Tool | Description |
 |------|-------------|
 | [fetch](docs/fetch.md) | Fetches and processes content from a given URL. By default, it cleans the content into markdown format, making it easier to read, with an option to return the raw data. |
 | [links](docs/links.md) | Extracts and sorts internal links from a webpage. It returns the links along with their frequency and (optionally) the anchor text. |
+| [python](docs/python.md) | Executes or lints Python code in a resource-limited sandbox. Includes useful packages like numpy and pandas, with options to either run the code or check it with Ruff. |
 
 ## 🏎️ How can I run it?
 
