@@ -16,8 +16,8 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 
 # Resource limits
-MEMORY_LIMIT = 500 * 1024 * 1024  # 500MB
-CPU_TIME_LIMIT = 60  # seconds
+MEMORY_LIMIT = 1 * 1024 * 1024 * 1024  # 1G
+CPU_TIME_LIMIT = 600  # seconds
 
 # Safe environment variables to expose to sandboxed code
 SAFE_ENV_VARS = {
