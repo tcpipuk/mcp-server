@@ -53,7 +53,7 @@ USER app
 ENV PATH="/app/.venv/bin:/app/sandbox-venv/bin:$PATH"
 
 # Configure environment variables
-ENV OPENBLAS_NUM_THREADS=8
+ENV OPENBLAS_NUM_THREADS=1
 ENV RUFF_CACHE_DIR=/tmp/.ruff_cache
 ENV SANDBOX_PYTHON="/app/sandbox-venv/bin/python"
 ENV SANDBOX_RUFF="/app/sandbox-venv/bin/ruff"
