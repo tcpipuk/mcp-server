@@ -38,9 +38,9 @@ def create_safe_env() -> dict[str, str]:
 def setup_sandbox() -> None:
     """Set up sandbox environment and resource limits."""
     # Set resource limits
-    resource.setrlimit(resource.RLIMIT_AS, (MEMORY_LIMIT, MEMORY_LIMIT))
-    resource.setrlimit(resource.RLIMIT_CPU, (CPU_TIME_LIMIT, CPU_TIME_LIMIT))
-    resource.setrlimit(resource.RLIMIT_NPROC, (20, 20))
+    resource.setrlimit(resource.RLIMIT_AS, (2 * 1024 * 1024 * 1024, 2 * 1024 * 1024 * 1024))
+    resource.setrlimit(resource.RLIMIT_CPU, (600, 600))
+    resource.setrlimit(resource.RLIMIT_NPROC, (50, 50))
     resource.setrlimit(resource.RLIMIT_FSIZE, (50 * 1024 * 1024, 50 * 1024 * 1024))
     resource.setrlimit(resource.RLIMIT_CORE, (0, 0))
     
