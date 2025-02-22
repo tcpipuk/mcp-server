@@ -9,7 +9,7 @@
 
 The `python` tool provides code execution and linting capabilities to LLMs over MCP:
 
-![Screenshot of GPT asked to perform a complex calculation then estimating π using Monte Carlo simulation](./python-usage.png)
+![Screenshot of GPT asked to perform a complex calculation then estimating π using Monte Carlo simulation](./images/python-usage.png)
 
 It uses a dedicated virtual environment with pre-installed packages, running in a sandboxed
 environment with resource limits to ensure safe execution.
