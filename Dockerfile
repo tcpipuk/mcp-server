@@ -34,6 +34,7 @@ RUN python -m venv /app/sandbox-venv && \
     /app/sandbox-venv/bin/pip install --no-cache-dir \
         aiodns \
         aiohttp \
+        beautifulsoup4 \
         ruff \
         numpy \
         pandas \
