@@ -54,4 +54,4 @@ ENV PATH="/app/.venv/bin:/app/sandbox-venv/bin:$PATH" \
   SANDBOX_RUFF="/app/sandbox-venv/bin/ruff"
 
 # Use conditional entrypoint
-ENTRYPOINT ["/bin/sh", "-c", "if [ \"$BUILD_ENV\" = \"dev\" ]; then pytest tests/; else exec mcp-server; fi"]
+ENTRYPOINT ["/bin/sh", "-c", "if [ \"$BUILD_ENV\" = \"dev\" ]; then pytest -v --log-cli-level=INFO tests/; else exec mcp-server; fi"]
