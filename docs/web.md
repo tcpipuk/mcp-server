@@ -1,10 +1,8 @@
 # Web Tool
 
-This document describes the unified Web Tool that replaces the previous separate Fetch and Links
-tools. The tool is designed to let the LLM retrieve, extract, and process web content in one of
-three different modes. Use this tool when up-to-date information from the internet may be
-needed, whether to fetch and clean page content for easy reading, to get the raw content of a page
-(such as HTML, JSON, or code), or to extract internal links for further navigation.
+This tool is designed to let the LLM retrieve, extract, and process web content:
+
+![Screenshot of GPT asked to research SSE in the MCP documentation and providing the answer after reading three different pages](./images/web-usage.png)
 
 The tool uses asynchronous HTTP requests via aiohttp, trafilatura for markdown extraction, and
 BeautifulSoup for parsing links. The User-Agent string is configurable via the `USER_AGENT`
@@ -14,17 +12,16 @@ environment variable (defaults to a Firefox-compatible string).
 
 The description provided to the LLM explains why and when to use the tool:
 
-> Use the web tool to access content on the internet. You can fetch and format pages into markdown
-> for readability, retrieve raw content (including code, XML, JSON, etc.), or extract internal
-> links with their anchor text to explore a website’s structure. Choose the appropriate mode based
-> on your specific needs.
+> Use to access the internet when up-to-date information may help. You can navigate documentation,
+> or fetch code and data from the web, so use it whenever fresh information from the internet could
+> potentially improve the accuracy of your answer to the user.
 
 The arguments available are as follows:
 
 | Argument  | Type    | Required | Default   | Description |
 |-----------|---------|----------|-----------|-------------|
 | url       | string  | Yes      | -         | URL to process. This can be any public web address, API endpoint, or location of a file on GitHub, etc. |
-| mode      | string  | Yes      | "markdown" | Processing mode. Allowed values: "markdown" (fetch & extract content into markdown), "raw" (retrieve raw content), and "links" (extract internal hyperlinks with anchor text). |
+| mode      | string  | No       | "markdown" | Processing mode. Allowed values: "markdown" (fetch & extract content into markdown), "raw" (retrieve raw content), and "links" (extract internal hyperlinks with anchor text). |
 | max_length| integer | No       | 0         | Maximum number of characters to return (0 is unlimited). In links mode, complete lines are added until the limit is met. |
 
 ## Content Processing
