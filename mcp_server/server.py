@@ -29,13 +29,13 @@ DEFAULT_TOOL_CONFIG_PATH = Path(__file__).parent / "tools.yaml"
 
 
 @dataclass(slots=True)
-class MCPServer(BaseMCPServer):
+class MCPServer:
     """Define a generic MCP server class with drop-in tool support."""
 
     config: dict[str, Any]
     server: BaseMCPServer = field(init=False)
     server_name: str = field(default="mcp-server")
-    tools: list[Tool] = field(init=False)
+    tools: list[Tool] = field(default_factory=list)
 
     def __post_init__(self) -> None:
         """Initialise the MCPServer."""

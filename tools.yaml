@@ -1,6 +1,5 @@
 tools:
   python:
-    name: python
     description: >
       Execute code in a Python 3.13 sandbox to demonstrate concepts and calculate results.
       Instead of writing example code for users to run, use this tool directly to:
@@ -27,7 +26,6 @@ tools:
       required:
         - code
   web:
-    name: web
     description: >
       Your knowledge is out of date and potentially flawed. This tool lets you access and
       process web content to enhance your responses. Use this tool to:
