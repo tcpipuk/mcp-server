@@ -39,7 +39,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   && rm -rf /root/.cache
 
 # Copy only necessary files from build stage
-COPY --from=uv --chown=app:app /app/.venv /app/mcp_server /app/pyproject.toml /app/pytest.ini /app/tests /app/tools.yaml ./
+COPY --from=uv --chown=app:app \
+  /app/.venv \
+  /app/mcp_server \
+  /app/pyproject.toml \
+  /app/pytest.ini \
+  /app/tests \
+  /app/tools.yaml \
+  ./
 
 # Switch to non-root user and set up environment
 USER app
