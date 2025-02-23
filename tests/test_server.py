@@ -29,12 +29,10 @@ def mock_yaml_file(tmp_path: Path) -> Path:
     yaml_content = {
         "tools": {
             "python": {
-                "name": "python",
                 "description": "Test Python tool",
                 "inputSchema": {"type": "object", "properties": {"code": {"type": "string"}}},
             },
             "web": {
-                "name": "web",
                 "description": "Test Web tool",
                 "inputSchema": {"type": "object", "properties": {"url": {"type": "string"}}},
             },
@@ -84,27 +82,28 @@ def test_yaml_loading(mock_yaml_file: Path) -> None:
         pytest.fail("Missing 'python' tool in config")
     if "web" not in config["tools"]:
         pytest.fail("Missing 'web' tool in config")
-    if config["tools"]["python"]["name"] != "python":
-        pytest.fail(f"Incorrect python tool name: {config['tools']['python']['name']}")
-    if config["tools"]["web"]["name"] != "web":
-        pytest.fail(f"Incorrect web tool name: {config['tools']['web']['name']}")
+    if "description" not in config["tools"]["python"]:
+        pytest.fail("Missing 'description' in python tool config")
+    if "description" not in config["tools"]["web"]:
+        pytest.fail("Missing 'description' in web tool config")
 
 
 def test_server_initialisation(server: MCPServer) -> None:
     """Test that the server initializes with the correct tools."""
     if not hasattr(server, "tools"):
         pytest.fail("Server missing tools attribute")
-    if "python" not in server.tools:
+    tool_names = {tool.name for tool in server.tools}
+    if "python" not in tool_names:
         pytest.fail("Server missing python tool")
-    if "web" not in server.tools:
+    if "web" not in tool_names:
         pytest.fail("Server missing web tool")
 
-    python_tool = server.config["tools"]["python"]
-    web_tool = server.config["tools"]["web"]
+    python_tool_config = server.config["tools"]["python"]
+    web_tool_config = server.config["tools"]["web"]
 
-    if python_tool["method"] != tool_python:
+    if python_tool_config.get("method") != tool_python:
         pytest.fail("Python tool has incorrect method")
-    if web_tool["method"] != tool_web:
+    if web_tool_config.get("method") != tool_web:
         pytest.fail("Web tool has incorrect method")
 
 
