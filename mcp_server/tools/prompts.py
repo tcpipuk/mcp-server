@@ -60,8 +60,11 @@ TOOLS: Final[list[Tool]] = [
             "- Calculate results that would be tedious manually\n"
             "- Demonstrate and verify working code examples\n\n"
             "Includes: numpy, pandas, requests, bs4, aiodns, aiohttp. Can either run code or lint "
-            "with Ruff. The user can see your code and its output, but it's not well-formatted, so "
-            "it's good practice to briefly explain what you did and what the results show."
+            "with Ruff. The user can see your code and its output, but the output is not well "
+            "formatted, so it's good practice to briefly explain what you did and what the results "
+            "show.\n\n"
+            "When quoting code (or console output) to the user, always use ``` backticks to format "
+            "codeblocks for them."
         ),
         inputSchema={
             "type": "object",
