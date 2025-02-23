@@ -9,7 +9,39 @@ on:
   workflow_dispatch:
 
 jobs:
-  build-and-push:
+  test:
+    name: Pytest
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build test image
+        uses: docker/build-push-action@v6
+        env:
+          DOCKER_BUILD_SUMMARY: false
+          DOCKER_BUILD_RECORD_UPLOAD: false
+        with:
+          context: .
+          load: true
+          build-args: BUILD_ENV=dev
+          tags: mcp-server:test
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Run tests and output results
+        run: |
+          docker run --rm -e BUILD_ENV=dev mcp-server:test | tee pytest_output.txt
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          cat pytest_output.txt >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
+  build:
+    name: Docker build
+    needs: test
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -30,7 +62,7 @@ jobs:
             type=ref,event=branch
             type=ref,event=pr
             type=ref,event=tag
-            type=sha,prefix=${{ github.event_name == 'pull_request' && 'pr-' || github.ref_name }}-
+            type=sha,enable={{is_default_branch}},prefix=${{ github.event_name == 'pull_request' && 'pr-' || github.ref_name }}-
 
       - name: Log in to GitHub Container Registry
         if: github.event_name != 'pull_request'
@@ -40,8 +72,10 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build and push Docker image
+      - name: Build and push production image
         uses: docker/build-push-action@v6
+        env:
+          DOCKER_BUILD_RECORD_UPLOAD: false
         with:
           context: .
           push: ${{ github.event_name != 'pull_request' }}

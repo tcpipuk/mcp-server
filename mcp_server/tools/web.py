@@ -1,193 +1,200 @@
-"""Tool for retrieving and processing web content."""
+"""Provide tools to retrieve and process web content.
+
+Defines classes and functions to fetch web content and process it in various modes:
+markdown, raw text, or link extraction.
+"""
 
 from __future__ import annotations
+
 from collections import Counter
-from urllib.parse import urljoin, urlparse
+from dataclasses import dataclass, field
+from enum import Enum
+from typing import Final
+from urllib.parse import urljoin
 
-from bs4 import BeautifulSoup, Tag, SoupStrainer
-from trafilatura import extract as trafilatura_extract
-
+from bs4 import BeautifulSoup, Tag
+from bs4.filter import SoupStrainer
 from mcp.shared.exceptions import McpError
 from mcp.types import INTERNAL_ERROR, ErrorData
+from trafilatura import extract as trafilatura_extract
+
 from .helpers import add_error, get_request
 
 
-def parse_link(href: str, base_url: str, base_netloc: str, base_scheme: str) -> str | None:
-    """
-    Parse and validate an anchor tag's href attribute.
+class ProcessingMode(Enum):
+    """Define valid content processing modes."""
 
-    Args:
-        href: Raw href attribute from an anchor tag.
-        base_url: Original URL being crawled.
-        base_netloc: Network location of the base URL.
-        base_scheme: Scheme of the base URL.
+    MARKDOWN = "markdown"
+    RAW = "raw"
+    LINKS = "links"
 
-    Returns:
-        An absolute URL if valid and internal; otherwise, None.
-    """
-    href = str(href).strip()
-    if not href or href.startswith(("#", "javascript:")):
-        return None
+    @classmethod
+    def from_str(cls, mode: str) -> ProcessingMode:
+        """Create ProcessingMode from string, defaulting to RAW if invalid.
 
-    try:
-        if href.startswith("/"):
-            return f"{base_scheme}://{base_netloc}{href}"
-        if href.startswith(("http://", "https://")):
-            parsed_link = urlparse(href)
-            if parsed_link.netloc != base_netloc:
-                return None
-            return href
-        return urljoin(base_url, href)
-    except (ValueError, TypeError):
-        return None
+        Args:
+            mode: String representation of the processing mode
+
+        Returns:
+            ProcessingMode enum value
+        """
+        try:
+            return cls(mode.lower())
+        except ValueError:
+            return cls.RAW
 
 
-def parse_links(html: str, base_url: str) -> dict[str, str]:
-    """
-    Parse HTML content and extract internal links along with their anchor text.
-
-    Args:
-        html: Raw HTML content to parse.
-        base_url: Original URL being crawled.
-
-    Returns:
-        A dictionary mapping each unique absolute URL to its first-found anchor text.
-    """
-    parsed_base = urlparse(base_url)
-    base_netloc = parsed_base.netloc
-    base_scheme = parsed_base.scheme
-
-    all_urls: list[str] = []
-    url_to_first_title: dict[str, str] = {}
-
-    for a in BeautifulSoup(html, "html.parser", parse_only=SoupStrainer("a", href=True)):
-        if not isinstance(a, Tag):
-            continue
-
-        absolute_url = parse_link(a.get("href", ""), base_url, base_netloc, base_scheme)
-        if not absolute_url:
-            continue
-
-        all_urls.append(absolute_url)
-
-        if absolute_url not in url_to_first_title:
-            url_to_first_title[absolute_url] = a.get_text(strip=True)
-
-    if not url_to_first_title:
-        return {}
-
-    url_counts = Counter(all_urls)
-    sorted_urls = sorted(
-        url_to_first_title.items(),
-        key=lambda x: (-url_counts[x[0]], all_urls.index(x[0])),
-    )
-
-    return dict(sorted_urls)
+SKIP_HREF_PREFIXES: Final = ("#", "javascript:")
 
 
-async def tool_web(url: str, mode: str = "markdown", max_length: int = 0) -> str:
-    """
-    Access and process web content from a given URL.
+@dataclass(slots=True)
+class WebProcessor:
+    """Handle web content retrieval and processing."""
 
-    The processing behavior depends on the mode:
-      - "markdown": Fetch the URL and extract content formatted as markdown.
-      - "raw": Fetch the URL and return the raw content.
-      - "links": Fetch the URL and extract internal links along with their anchor text,
-         making sure not to break a line in the middle if a character limit is set.
+    url: str
+    mode: ProcessingMode | str = field(default=ProcessingMode.MARKDOWN)
+    max_length: int = field(default=0)
 
-    Args:
-        url: The URL to process.
-        mode: The content processing mode ("markdown", "raw", or "links").
-        max_length: Maximum number of characters to return (0 means unlimited).
+    def __post_init__(self) -> None:
+        """Validate and correct inputs as needed."""
+        if isinstance(self.mode, str):
+            self.mode = ProcessingMode.from_str(self.mode)
+        self.max_length = max(self.max_length, 0)
 
-    Returns:
-        A string representation of the processed content.
+    async def process(self) -> str:
+        """Fetch and process the content according to the specified mode.
 
-    Raises:
-        McpError: If an invalid mode is specified or if link extraction fails.
-    """
-    downloaded = await get_request(url)
+        Returns:
+            Processed content as a string
+        """
+        content = await get_request(self.url)
 
-    if mode == "raw":
-        extracted = downloaded
+        match self.mode:
+            case ProcessingMode.LINKS:
+                return self._format_links(self._extract_links(content))
 
-    elif mode == "markdown":
-        extracted = trafilatura_extract(
-            downloaded,
-            output_format="markdown",
-            include_formatting=True,
-            include_images=True,
-            include_links=True,
-            include_tables=True,
-            with_metadata=True,
-        )
-        if extracted is None:
+            case ProcessingMode.MARKDOWN:
+                extracted = trafilatura_extract(
+                    content,
+                    output_format="markdown",
+                    include_formatting=True,
+                    include_images=True,
+                    include_links=True,
+                    include_tables=True,
+                    with_metadata=True,
+                ) or add_error(
+                    content, "Extraction to markdown failed; returning raw content", append=False
+                )
+
+            case ProcessingMode.RAW:
+                extracted = content
+
+        if self.max_length > 0 and len(extracted) > self.max_length:
             extracted = add_error(
-                downloaded,
-                "Extraction to markdown failed; returning raw content",
-                append=False,
-            )
-
-    if mode in ("raw", "markdown"):
-        if max_length > 0 and len(extracted) > max_length:
-            extracted = add_error(
-                extracted[:max_length],
-                f"Content truncated. The output has been limited to {max_length} characters",
+                extracted[: self.max_length],
+                f"Content truncated to {self.max_length} characters",
                 append=True,
             )
 
-        return f"Contents of {url}:\n\n{extracted}"
+        return f"Contents of {self.url}:\n\n{extracted}"
 
-    elif mode == "links":
-        links = parse_links(downloaded, url)
-        total_links = len(links)
+    def _get_absolute_url(self, href: str) -> str | None:
+        """Get the absolute URL from a relative or absolute href.
+
+        Returns:
+            Absolute URL or None if invalid
+        """
+        stripped = href.strip()
+        if not stripped or any(stripped.startswith(prefix) for prefix in SKIP_HREF_PREFIXES):
+            return None
+        return (
+            stripped
+            if stripped.startswith(("http://", "https://"))
+            else urljoin(self.url, stripped)
+        )
+
+    def _extract_links(self, content: str) -> dict[str, str]:
+        """Extract all valid links with their anchor text.
+
+        Returns:
+            Dictionary mapping each unique absolute URL to its first-found anchor text
+        """
+        soup = BeautifulSoup(content, "html.parser", parse_only=SoupStrainer("a", href=True))
+
+        anchors = [a for a in soup.find_all("a", href=True) if isinstance(a, Tag)]
+        valid_anchors = [
+            (a, url)
+            for a in anchors
+            if (href := a.get("href"))
+            and isinstance(href, str)
+            and (url := self._get_absolute_url(href))
+        ]
+
+        url_counts = Counter(url for _, url in valid_anchors)
+
+        return dict(
+            sorted(
+                {
+                    url: next(
+                        a.get_text(strip=True)
+                        for a, anchor_url in valid_anchors
+                        if anchor_url == url
+                    )
+                    for url in url_counts
+                }.items(),
+                key=lambda x: (-url_counts[x[0]], x[0]),
+            )
+        )
+
+    def _format_links(self, links: dict[str, str]) -> str:
+        """Format extracted links into a readable string.
+
+        Args:
+            links: Dictionary of URLs and their titles
+
+        Returns:
+            Formatted string of links
+
+        Raises:
+            McpError: If no links are found
+        """
         if not links:
             raise McpError(
                 ErrorData(
                     code=INTERNAL_ERROR,
-                    message=f"No links found on {url} - it may require JavaScript or authentication.",
+                    message=f"No links found on {self.url} - it may require JavaScript or auth.",
                 )
             )
 
-        # Prepare link lines.
-        link_lines = []
-        for link_url, title in links.items():
-            if title:
-                line = f"- {title}: {link_url}"
-            else:
-                line = f"- {link_url}"
-            link_lines.append(line)
+        total_links = len(links)
+        formatted_links = []
+        length = 0
 
-        # Build output with header.
-        output_lines = []
-        cumulative_length = 0
+        for url, title in links.items():
+            link_text = f"- {title}: {url}" if title else f"- {url}"
+            new_length = length + len(link_text) + 1
 
-        # We'll decide how many full lines can be added without exceeding max_length.
-        added_count = 0
-        for line in link_lines:
-            # If adding this line (and a newline) would exceed max_length, stop.
-            # Note: if max_length == 0 then there's no limit.
-            projected_length = cumulative_length + len(line) + 1  # +1 for the newline.
-            if max_length > 0 and projected_length > max_length:
+            if self.max_length > 0 and new_length > self.max_length:
                 break
-            output_lines.append(line)
-            cumulative_length = projected_length
-            added_count += 1
 
-        # Set an appropriate header.
-        if added_count < total_links:
-            header = f"{added_count} of {total_links} links returned on {url}"
-        else:
-            header = f"All {total_links} links found on {url}"
+            formatted_links.append(link_text)
+            length = new_length
 
-        header_line = header + "\n"
-        output = header_line + "\n".join(output_lines)
-        return output
-
-    else:
-        raise McpError(
-            ErrorData(
-                code=INTERNAL_ERROR,
-                message=(f"Invalid mode '{mode}'. Expected one of: 'markdown', 'raw', or 'links'."),
-            )
+        added_count = len(formatted_links)
+        header = (
+            f"{added_count} of {total_links} links found on {self.url}"
+            if added_count < total_links
+            else f"All {total_links} links found on {self.url}"
         )
+
+        return f"{header}\n" + "\n".join(formatted_links)
+
+
+async def tool_web(url: str, mode: str = "markdown", max_length: int = 0) -> str:
+    """Access and process web content from a given URL.
+
+    Returns:
+        Processed content as a string
+    """
+    processor = WebProcessor(url=url, mode=mode, max_length=max_length)
+    return await processor.process()

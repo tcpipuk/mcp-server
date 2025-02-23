@@ -1,5 +1,4 @@
-"""
-Command-line entry point for the MCP fetch server.
+"""Command-line entry point for the MCP fetch server.
 
 Provides configuration options for running the fetch server, including customisation
 of the User-Agent string for HTTP requests. The server runs asynchronously to handle
@@ -7,8 +6,8 @@ concurrent requests efficiently.
 """
 
 from argparse import ArgumentParser
-from asyncio import CancelledError
-from asyncio import run as asyncio_run
+from asyncio import CancelledError, run as asyncio_run
+from contextlib import suppress as contextlib_suppress
 from os import environ as os_environ
 
 from .server import serve
@@ -29,10 +28,8 @@ def main() -> None:
     if args.user_agent:
         os_environ["USER_AGENT"] = args.user_agent
 
-    try:
+    with contextlib_suppress(KeyboardInterrupt, CancelledError):
         asyncio_run(serve())
-    except (KeyboardInterrupt, CancelledError):
-        pass
 
 
 if __name__ == "__main__":

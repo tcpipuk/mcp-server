@@ -1,5 +1,4 @@
-"""
-Core server implementation for the MCP fetch service.
+"""Core server implementation for the MCP fetch service.
 
 Implements a Model Context Protocol server that fetches and processes web content.
 Supports both standard I/O and Server-Sent Events (SSE) transport modes, with
@@ -18,8 +17,7 @@ from mcp.shared.exceptions import McpError
 from mcp.types import INVALID_PARAMS, ErrorData, TextContent, Tool
 from starlette.applications import Starlette
 from starlette.routing import Mount, Route
-from uvicorn import Config as UvicornConfig
-from uvicorn import Server as UvicornServer
+from uvicorn import Config as UvicornConfig, Server as UvicornServer
 
 from .tools import TOOLS, tool_python, tool_web
 
@@ -29,15 +27,12 @@ if TYPE_CHECKING:
 
 
 async def serve() -> None:
-    """
-    Run the fetch MCP server.
-    """
+    """Run the fetch MCP server."""
     server = Server("mcp-fetch")
 
     @server.list_tools()
     async def list_tools() -> list[Tool]:
-        """
-        Return a list of available tools.
+        """Return a list of available tools.
 
         Returns:
             A list of Tool objects representing the available tools.
@@ -46,8 +41,7 @@ async def serve() -> None:
 
     @server.call_tool()
     async def call_tool(name: str, arguments: dict) -> list[TextContent]:
-        """
-        Call the specified tool with provided arguments.
+        """Call the specified tool with provided arguments.
 
         Args:
             name: The name of the tool to call.
@@ -74,13 +68,12 @@ async def serve() -> None:
         sse = SseServerTransport("/messages/")
 
         async def handle_sse(request: Request) -> Response | None:
-            """
-            Handle the Server-Sent Events (SSE) connection.
+            """Handle the Server-Sent Events (SSE) connection.
 
             Args:
                 request: The incoming HTTP request.
             """
-            async with sse.connect_sse(request.scope, request.receive, request._send) as streams:
+            async with sse.connect_sse(request.scope, request.receive, request._send) as streams:  # noqa: SLF001
                 await server.run(streams[0], streams[1], options, raise_exceptions=True)
 
         starlette_app = Starlette(
@@ -92,10 +85,7 @@ async def serve() -> None:
         )
 
         config = UvicornConfig(
-            app=starlette_app,
-            host=sse_host,
-            port=int(sse_port),
-            log_level="info",
+            app=starlette_app, host=sse_host, port=int(sse_port), log_level="info"
         )
         server_instance = UvicornServer(config)
         await server_instance.serve()
