@@ -5,6 +5,6 @@ allowing models to retrieve and process web content in a controlled manner.
 """
 
 from .__main__ import main
-from .server import serve
+from .server import MCPServer
 
-__all__ = ["main", "serve"]
+__all__ = ["MCPServer", "main"]

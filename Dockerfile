@@ -44,6 +44,7 @@ COPY --from=uv --chown=app:app /app/.venv ./.venv/
 COPY --from=uv --chown=app:app /app/pyproject.toml ./
 COPY --from=uv --chown=app:app /app/pytest.ini ./
 COPY --from=uv --chown=app:app /app/tests ./tests/
+COPY --from=uv --chown=app:app /app/tools.yaml ./
 
 # Switch to non-root user and set up environment
 USER app
