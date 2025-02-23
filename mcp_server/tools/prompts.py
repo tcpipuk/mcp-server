@@ -12,10 +12,12 @@ TOOLS: Final[list[Tool]] = [
     Tool(
         name="web",
         description=(
-            "Use to access the internet when up-to-date information may help. You can navigate "
-            "documentation, or fetch code and data from the web, so use it whenever fresh "
-            "information from the internet could potentially improve the accuracy of your answer "
-            "to the user."
+            "Your knowledge is out of date and potentially flawed. This tool lets you access and "
+            "process web content to enhance your responses. Use this tool to:\n"
+            "- Check current documentation when answering questions\n"
+            "- Fetch example code or data to demonstrate solutions\n"
+            "- Navigate through documentation using extracted links\n"
+            "- Verify information before making recommendations"
         ),
         inputSchema={
             "type": "object",
@@ -23,8 +25,8 @@ TOOLS: Final[list[Tool]] = [
                 "url": {
                     "type": "string",
                     "description": (
-                        "The URL to access. This can be any public web address, an API GET "
-                        "endpoint, or even a location of a text/code file on GitHub, etc."
+                        "URL to access - could be a web page, API endpoint, or a file on GitHub, "
+                        "etc."
                     ),
                 },
                 "mode": {
@@ -32,41 +34,34 @@ TOOLS: Final[list[Tool]] = [
                     "enum": ["markdown", "raw", "links"],
                     "default": "markdown",
                     "description": (
-                        "Determines how to process the content:\n"
-                        "'markdown' formats a HTML page into efficient markdown, removing headers, "
-                        "navigation, ads, etc, so ideal for normal web pages;\n"
-                        "'raw' returns the unprocessed content, if you need to see raw HTML, or "
-                        "code, XML, JSON, etc.;\n"
-                        "'links' extracts a list of hyperlinks (with anchor text) from a HTML "
-                        "page, which can help you understand site structure or navigate "
-                        "documentation."
+                        "How to process the content:\n"
+                        "'markdown': Convert HTML to clean markdown (best for reading)\n"
+                        "'raw': Get unprocessed content (for non-HTML such as code, JSON, etc)\n"
+                        "'links': Extract hyperlinks from a webpage with anchor text, which can be "
+                        "combined with the markdown mode for navigation around a website, e.g. to "
+                        "locate details in a repository or documentation site."
                     ),
                 },
                 "max_length": {
                     "type": "integer",
                     "default": 0,
-                    "description": (
-                        "Limits the number of characters returned. A value of 0 means no limit. "
-                        "You could use this if you're only interested in the start of a file, but "
-                        "it's better to err on the side of having more context."
-                    ),
+                    "description": "Limit response length in characters (zero means no limit)",
                 },
             },
-            "required": ["url", "mode"],
+            "required": ["url"],
         },
     ),
     Tool(
         name="python",
         description=(
-            "Execute or lint Python code in a resource-limited sandbox.\n"
-            "It has internet access, with aiodns, aiohttp, bs4, numpy, pandas, and requests "
-            "installed, so you can now test and solve a number of problems without needing to "
-            "directly calculate it yourself.\n"
-            "Depending on your input parameters, this tool either runs the code or lints with "
-            "Ruff, so you can test code before running, or use Ruff to help debugging if you get "
-            "errors. The user can see the code you've submitted and the raw returned response, but "
-            "it's good etiquette to briefly summarise after using this tool what you asked for and "
-            "got back."
+            "Execute Python code in a sandbox to demonstrate concepts and calculate results. "
+            "Instead of writing example code for users to run, use this tool directly to:\n"
+            "- Show pandas/numpy operations with real data\n"
+            "- Calculate results that would be tedious manually\n"
+            "- Demonstrate and verify working code examples\n\n"
+            "Includes: numpy, pandas, requests, bs4, aiodns, aiohttp. Can either run code or lint "
+            "with Ruff. The user can see your code and its output, but it's good practice to "
+            "briefly explain what you did and what the results show."
         ),
         inputSchema={
             "type": "object",
