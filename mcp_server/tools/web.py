@@ -15,8 +15,7 @@ from .helpers import add_error, get_request
 
 
 def parse_link(href: str, base_url: str, base_netloc: str, base_scheme: str) -> str | None:
-    """
-    Parse and validate an anchor tag's href attribute.
+    """Parse and validate an anchor tag's href attribute.
 
     Args:
         href: Raw href attribute from an anchor tag.
@@ -45,8 +44,7 @@ def parse_link(href: str, base_url: str, base_netloc: str, base_scheme: str) -> 
 
 
 def parse_links(html: str, base_url: str) -> dict[str, str]:
-    """
-    Parse HTML content and extract internal links along with their anchor text.
+    """Parse HTML content and extract internal links along with their anchor text.
 
     Args:
         html: Raw HTML content to parse.
@@ -80,16 +78,14 @@ def parse_links(html: str, base_url: str) -> dict[str, str]:
 
     url_counts = Counter(all_urls)
     sorted_urls = sorted(
-        url_to_first_title.items(),
-        key=lambda x: (-url_counts[x[0]], all_urls.index(x[0])),
+        url_to_first_title.items(), key=lambda x: (-url_counts[x[0]], all_urls.index(x[0]))
     )
 
     return dict(sorted_urls)
 
 
 async def tool_web(url: str, mode: str = "markdown", max_length: int = 0) -> str:
-    """
-    Access and process web content from a given URL.
+    """Access and process web content from a given URL.
 
     The processing behavior depends on the mode:
       - "markdown": Fetch the URL and extract content formatted as markdown.
@@ -125,9 +121,7 @@ async def tool_web(url: str, mode: str = "markdown", max_length: int = 0) -> str
         )
         if extracted is None:
             extracted = add_error(
-                downloaded,
-                "Extraction to markdown failed; returning raw content",
-                append=False,
+                downloaded, "Extraction to markdown failed; returning raw content", append=False
             )
 
     if mode in {"raw", "markdown"}:
@@ -148,7 +142,7 @@ async def tool_web(url: str, mode: str = "markdown", max_length: int = 0) -> str
                 ErrorData(
                     code=INTERNAL_ERROR,
                     message=f"No links found on {url} - it may require JavaScript or auth.",
-                ),
+                )
             )
 
         # Prepare link lines.
@@ -186,5 +180,5 @@ async def tool_web(url: str, mode: str = "markdown", max_length: int = 0) -> str
         ErrorData(
             code=INTERNAL_ERROR,
             message=(f"Invalid mode '{mode}'. Expected one of: 'markdown', 'raw', or 'links'."),
-        ),
+        )
     )

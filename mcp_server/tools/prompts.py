@@ -1,5 +1,4 @@
-"""
-Tools prompt definitions for the MCP fetch server.
+"""Tools prompt definitions for the MCP fetch server.
 
 Contains constant definitions that define available tools for fetching, linking, executing and
 linting Python code.
@@ -72,10 +71,7 @@ TOOLS: Final[list[Tool]] = [
         inputSchema={
             "type": "object",
             "properties": {
-                "code": {
-                    "type": "string",
-                    "description": "Python code to use",
-                },
+                "code": {"type": "string", "description": "Python code to use"},
                 "timeout": {
                     "type": "integer",
                     "default": 10,

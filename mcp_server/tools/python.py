@@ -1,5 +1,4 @@
-"""
-Provide tools to execute or lint Python code in a sandboxed environment.
+"""Provide tools to execute or lint Python code in a sandboxed environment.
 
 Defines functions to write code to a temporary file, then either run it or lint it using Ruff,
 with appropriate resource limits and isolation.
@@ -9,7 +8,6 @@ from __future__ import annotations
 
 import os
 import resource
-from asyncio import TimeoutError as AsyncioTimeoutError
 from asyncio import create_subprocess_exec, subprocess, wait_for
 from os import environ as os_environ
 from pathlib import Path
@@ -20,19 +18,11 @@ MEMORY_LIMIT = 1 * 1024 * 1024 * 1024  # 1G
 CPU_TIME_LIMIT = 600  # seconds
 
 # Safe environment variables to expose to sandboxed code
-SAFE_ENV_VARS = {
-    "LANG",
-    "OPENBLAS_NUM_THREADS",
-    "PYTHON_VERSION",
-    "PYTHONPATH",
-    "TZ",
-    "USER_AGENT",
-}
+SAFE_ENV_VARS = {"LANG", "OPENBLAS_NUM_THREADS", "PYTHON_VERSION", "PYTHONPATH", "TZ", "USER_AGENT"}
 
 
 def create_safe_env() -> dict[str, str]:
-    """
-    Create a minimal environment with only safe variables.
+    """Create a minimal environment with only safe variables.
 
     Returns:
         A dictionary of safe environment variables
@@ -55,8 +45,7 @@ def setup_sandbox() -> None:
 
 
 async def run_sandboxed(code: str, cmd: list[str], timeout: int | None = None) -> str:
-    """
-    Run a command on a temporary file containing the provided code.
+    """Run a command on a temporary file containing the provided code.
 
     Returns:
         The output of the command
@@ -84,7 +73,7 @@ async def run_sandboxed(code: str, cmd: list[str], timeout: int | None = None) -
                 if stderr:
                     error = stderr.decode()
                     output = f"{output}\nErrors:\n{error}" if output else error
-            except AsyncioTimeoutError:
+            except TimeoutError:
                 proc.kill()
                 return "Execution timed out"
             else:
@@ -95,8 +84,7 @@ async def run_sandboxed(code: str, cmd: list[str], timeout: int | None = None) -
 
 
 async def tool_python(code: str, timeout: int = 5, lint: bool = False) -> str:
-    """
-    Execute or lint Python code in a sandboxed environment.
+    """Execute or lint Python code in a sandboxed environment.
 
     Args:
         code: The Python code to execute or lint
