@@ -37,6 +37,7 @@ jobs:
 
       - name: Run tests and output results
         run: |
+          set -o pipefail
           docker run --rm -e BUILD_ENV=dev mcp-server:test | tee pytest_output.txt
           echo '```' >> $GITHUB_STEP_SUMMARY
           cat pytest_output.txt >> $GITHUB_STEP_SUMMARY
