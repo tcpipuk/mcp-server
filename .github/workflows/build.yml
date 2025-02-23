@@ -20,6 +20,8 @@ jobs:
 
       - name: Build test image
         uses: docker/build-push-action@v6
+        env:
+          DOCKER_BUILD_SUMMARY: false
         with:
           context: .
           load: true
@@ -29,7 +31,13 @@ jobs:
           cache-to: type=gha,mode=max
 
       - name: Run tests
-        run: docker run --rm -e BUILD_ENV=dev mcp-server:test
+        run: |
+          # Run tests and capture output
+          docker run --rm -e BUILD_ENV=dev mcp-server:test | tee pytest_output.txt
+
+          # Create job summary with pytest results
+          echo "## Pytest Results" >> $GITHUB_STEP_SUMMARY
+          cat pytest_output.txt >> $GITHUB_STEP_SUMMARY
 
   build:
     needs: test
