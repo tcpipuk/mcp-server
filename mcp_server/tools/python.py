@@ -24,6 +24,8 @@ ALLOWED_ENV_VARS = frozenset({
     "OPENBLAS_NUM_THREADS",
     "PYTHON_VERSION",
     "PYTHONPATH",
+    "SANDBOX_PYTHON",
+    "SANDBOX_RUFF",
     "TZ",
     "USER_AGENT",
 })
@@ -77,9 +79,10 @@ class SandboxedPython:
         for res, limit in ResourceLimits.LIMITS.items():
             resource.setrlimit(res, (limit, limit))
 
-        # Filter and clear environment variables atomically
+        # Preserve necessary environment variables.
+        original_env = {k: v for k, v in os_environ.items() if k in ALLOWED_ENV_VARS}
         os_environ.clear()
-        os_environ.update({k: v for k, v in dict(os_environ).items() if k in ALLOWED_ENV_VARS})
+        os_environ.update(original_env)
 
     async def execute(self) -> tuple[bytes, bytes, str]:
         """Execute the code in the sandbox and return raw outputs.

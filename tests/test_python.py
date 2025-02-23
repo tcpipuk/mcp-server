@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
-import os
+from os import environ as os_environ
+from pathlib import Path
+from sys import executable as sys_executable, prefix as sys_prefix
 
 import pytest
 
@@ -12,12 +14,12 @@ from mcp_server.tools.python import SandboxedPython, tool_python
 @pytest.fixture
 def sandbox_env():
     """Set up sandbox environment variables for testing."""
-    os.environ["SANDBOX_PYTHON"] = "/usr/bin/python3"
-    os.environ["SANDBOX_RUFF"] = "/usr/local/bin/ruff"
+    os_environ["SANDBOX_PYTHON"] = sys_executable
+    os_environ["SANDBOX_RUFF"] = str(Path(sys_prefix) / "bin" / "ruff")
     yield
     for key in ["SANDBOX_PYTHON", "SANDBOX_RUFF"]:
-        if key in os.environ:
-            del os.environ[key]
+        if key in os_environ:
+            del os_environ[key]
 
 
 @pytest.mark.asyncio
@@ -50,10 +52,25 @@ async def test_python_timeout(sandbox_env) -> None:
 @pytest.mark.asyncio
 async def test_python_linting(sandbox_env) -> None:
     """Test Python code linting."""
-    code = "x=1\ny =2\nprint(x+y)"  # Contains formatting issues
+    # Create code with multiple obvious linting issues
+    code = """
+x=1 # Missing space after =
+y= 2 # Inconsistent spacing
+z ="test" # Missing space around operator
+print(x+y+z) # Missing spaces around operators
+"""
     result = await tool_python(code, lint=True)
-    if not any(issue in result.lower() for issue in ["style", "format", "lint"]):
-        pytest.fail(f"Expected linting issues in output, got: {result}")
+
+    # Check if we got any output at all
+    if not result.strip():
+        pytest.fail(f"No linting output received. SANDBOX_RUFF={os_environ.get('SANDBOX_RUFF')}")
+
+    # Look for specific ruff error codes or common linting terms
+    expected_issues = ["E225", "E226", "missing whitespace", "operator"]
+    found_issues = [issue for issue in expected_issues if issue.lower() in result.lower()]
+
+    if not found_issues:
+        pytest.fail(f"Expected at least one of {expected_issues} in linting output, got: {result}")
 
 
 def test_sandbox_resource_limits() -> None:
