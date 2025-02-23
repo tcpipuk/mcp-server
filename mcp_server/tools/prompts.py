@@ -54,14 +54,14 @@ TOOLS: Final[list[Tool]] = [
     Tool(
         name="python",
         description=(
-            "Execute Python code in a sandbox to demonstrate concepts and calculate results. "
+            "Execute code in a Python 3.13 sandbox to demonstrate concepts and calculate results. "
             "Instead of writing example code for users to run, use this tool directly to:\n"
             "- Show pandas/numpy operations with real data\n"
             "- Calculate results that would be tedious manually\n"
             "- Demonstrate and verify working code examples\n\n"
             "Includes: numpy, pandas, requests, bs4, aiodns, aiohttp. Can either run code or lint "
-            "with Ruff. The user can see your code and its output, but it's good practice to "
-            "briefly explain what you did and what the results show."
+            "with Ruff. The user can see your code and its output, but it's not well-formatted, so "
+            "it's good practice to briefly explain what you did and what the results show."
         ),
         inputSchema={
             "type": "object",
