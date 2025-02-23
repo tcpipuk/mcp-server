@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from os import environ as os_environ
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 import pytest
@@ -116,3 +117,23 @@ async def test_server_environment(server_env: None) -> None:
         pytest.fail(f"Incorrect SSE_PORT: {os_environ['SSE_PORT']}")
     if os_environ["USER_AGENT"] != "TestAgent/1.0":
         pytest.fail(f"Incorrect USER_AGENT: {os_environ['USER_AGENT']}")
+
+
+def test_live_tools_yaml_file() -> None:
+    """Test that the live tools.yaml file is readable and contains required keys."""
+    # Determine the project root (assumed one level above the tests directory)
+    project_root = Path(__file__).parent.parent
+    tools_yaml_path = project_root / "tools.yaml"
+    if not tools_yaml_path.exists():
+        pytest.fail(f"tools.yaml file not found at {tools_yaml_path}")
+
+    config = yaml_safe_load(tools_yaml_path.read_text(encoding="utf-8"))
+
+    if "tools" not in config:
+        pytest.fail("Missing 'tools' section in live tools.yaml")
+
+    for tool in ("python", "web"):
+        if tool not in config["tools"]:
+            pytest.fail(f"Missing '{tool}' configuration in live tools.yaml")
+        if "inputSchema" not in config["tools"][tool]:
+            pytest.fail(f"Missing 'inputSchema' for tool '{tool}' in live tools.yaml")
