@@ -1,7 +1,6 @@
 # Build stage using uv with a frozen lockfile and dependency caching
 FROM ghcr.io/astral-sh/uv:python3.13-bookworm-slim AS uv
 WORKDIR /app
-ARG BUILD_ENV=prod
 
 # Enable bytecode compilation and copy mode
 ENV UV_COMPILE_BYTECODE=1 \
