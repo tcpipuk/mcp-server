@@ -7,6 +7,16 @@ ARG BUILD_ENV=prod
 ENV UV_COMPILE_BYTECODE=1 \
   UV_LINK_MODE=copy
 
+# Install dependencies using the lockfile and settings
+COPY pyproject.toml uv.lock ./
+RUN --mount=type=cache,target=/root/.cache/uv \
+  uv sync --frozen --no-install-project ${BUILD_ENV:+"--dev"} --no-editable
+
+# Add the rest of the project source code and install it
+COPY . .
+RUN --mount=type=cache,target=/root/.cache/uv \
+  uv sync --frozen ${BUILD_ENV:+"--dev"} --no-editable
+
 # Add the source code and install dependencies
 COPY . .
 RUN --mount=type=cache,target=/root/.cache/uv \
@@ -35,8 +45,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   && rm -rf /root/.cache
 
 # Copy only necessary files from build stage
-COPY --from=uv --chown=app:app /app/.venv /app/mcp_server /app/tests ./
-COPY --from=uv --chown=app:app /app/pyproject.toml /app/pytest.ini /app/tools.yaml ./
+COPY --from=uv --chown=app:app /app/ .
 
 # Switch to non-root user and set up environment
 USER app

@@ -1,0 +1,10 @@
+.dockerignore
+.git
+.github
+.gitignore
+.venv
+.ruff_cache
+.pytest_cache
+__pycache__
+docs
+Dockerfile
