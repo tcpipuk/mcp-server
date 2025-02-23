@@ -23,14 +23,13 @@ jobs:
         with:
           context: .
           load: true
-          build-args: |
-            BUILD_ENV=dev
+          build-args: BUILD_ENV=dev
           tags: mcp-server:test
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
       - name: Run tests
-        run: docker run --rm mcp-server:test
+        run: docker run --rm -e BUILD_ENV=dev mcp-server:test
 
   build:
     needs: test
