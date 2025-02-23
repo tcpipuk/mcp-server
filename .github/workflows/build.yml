@@ -4,8 +4,11 @@ concurrency:
   cancel-in-progress: true
 
 on:
-  push:
   pull_request:
+  push:
+    paths-ignore:
+      - "**/*.md"
+      - "docs/**"
   workflow_dispatch:
 
 jobs:
