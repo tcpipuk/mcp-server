@@ -1,51 +1,56 @@
 # MCP Server
 
-This server offers tools that AI assistants can interact with safely to operate external tools and
-services using the Model Context Protocol (MCP). It pre-processes data to save tokens and make it
-easier for LLMs to understand, and provides informative errors when things go wrong.
+A server that lets AI assistants like Claude safely use external tools - like running Python code or
+accessing websites. It processes data to make it easier for AI to understand, and provides helpful
+error messages when things go wrong, so bots are more empowered to solve their own problems.
 
 1. [🛠️ What tools does this server offer?](#️-what-tools-does-this-server-offer)
 2. [🏎️ How can I run it?](#️-how-can-i-run-it)
-   1. [🐋 Docker Compose](#-docker-compose)
-   2. [💻 Local Development](#-local-development)
-3. [🔌 Which connection method should I use?](#-which-connection-method-should-i-use)
-4. [📚 Where can I read more about MCP?](#-where-can-i-read-more-about-mcp)
+   1. [🐋 Using Docker (recommended)](#-using-docker-recommended)
+   2. [💻 Running locally](#-running-locally)
+3. [🔌 How to connect](#-how-to-connect)
+4. [📚 Learn more about MCP](#-learn-more-about-mcp)
 5. [📄 License](#-license)
 
 ## 🛠️ What tools does this server offer?
 
-The server provides tools for web content retrieval and code execution:
+Once running, your AI assistant will be able to:
 
-| Tool | Description |
+| Tool | What it can do |
 |------|-------------|
-| [python](docs/python.md)| Executes or lints Python code in a resource-limited sandbox. Includes useful packages like numpy and pandas, with options to either run the code or check it with Ruff. |
-| [web](docs/web.md) | Accesses and processes content from a given URL. Depending on the mode ('markdown', 'raw', or 'links'), it can clean and format page content into markdown, return the raw unprocessed data, or extract internal links with their anchor text to facilitate further navigation. |
+| [Python](docs/python.md)| Run Python code safely in a sandbox. Includes popular packages like numpy and pandas for data analysis, and can either run code or check it for errors. |
+| [Web](docs/web.md) | Access websites and process their content. Can convert pages to markdown for easy reading, get the raw content, or extract links to help navigate through documentation. |
 
 ## 🏎️ How can I run it?
 
-### 🐋 Docker Compose
+### 🐋 Using Docker (recommended)
 
-[Install Docker](https://docs.docker.com/engine/install/) if you haven't already, then put this in
-a `docker-compose.yml` and run `docker compose up` to start it:
+1. [Install Docker](https://docs.docker.com/engine/install/) if you haven't already
+2. Create a file called `docker-compose.yml` with:
 
-```yaml:docker-compose.yml
-services:
-  mcp-server:
-    environment:
-      - SSE_HOST=0.0.0.0
-      - SSE_PORT=8080
-      - USER_AGENT=CustomAgent/1.0
-    image: ghcr.io/tcpipuk/mcp-server:latest
-    restart: unless-stopped
-    stop_grace_period: 1s
-```
+   ```yaml:docker-compose.yml
+   services:
+   mcp-server:
+      environment:
+         - SSE_HOST=0.0.0.0
+         - SSE_PORT=8080
+         - USER_AGENT=CustomAgent/1.0
+      image: ghcr.io/tcpipuk/mcp-server:latest
+      restart: unless-stopped
+      stop_grace_period: 1s
+   ```
 
-> **Note**: If `SSE_HOST` and/or `SSE_PORT` environment variables are not set, the server will
-> automatically use `stdio` mode and listen on standard input/output.
+3. Run `docker compose up` to start the server
 
-Normally you'd run this alongside [Claude Desktop](https://modelcontextprotocol.io/quickstart/user)
-(using stdio mode) or using [LibreChat](https://www.librechat.ai/docs/local) (using SSE mode), just
-putting something like this in your `librechat.yaml` to tell it how to talk to this MCP server:
+> **Note**: The server will automatically use network mode (SSE) when you set `SSE_HOST` and
+> `SSE_PORT`. This is what you want for using it with LibreChat.
+
+Most people use this with either:
+
+- [Claude Desktop](https://modelcontextprotocol.io/quickstart/user) - connects directly to your computer
+- [LibreChat](https://www.librechat.ai/docs/local) - connects over the network
+
+For LibreChat, add this to your `librechat.yaml` to connect:
 
 ```yaml:librechat.yaml
 mcpServers:
@@ -55,7 +60,7 @@ mcpServers:
     url: http://mcp-server:8080/sse
 ```
 
-### 💻 Local Development
+### 💻 Running locally
 
 1. Install `uv` (requires Python 3.13+):
 
@@ -100,17 +105,16 @@ Available arguments:
 > environment variables are not set) the server will automatically assume `stdio` mode and
 > listen on standard I/O.
 
-## 🔌 Which connection method should I use?
+## 🔌 How to connect
 
-You can run it using Docker, connect through standard input/output on the local machine, or use SSE
-over a network, which means it works directly with LibreChat and other MCP-compatible chat systems.
+You can connect to the server in two ways:
 
-| Method | Best for | Notes |
-|--------|----------|--------|
-| Standard I/O (stdio) | Local development and testing | Direct process communication. Not recommended for Docker as it requires sharing the Docker socket. |
-| Server-Sent Events (SSE) | Production deployment | Runs as a network service. Recommended for Docker and cloud environments. |
+| Method | What it means | When to use it |
+|--------|---------------|----------------|
+| Network connection (SSE) | The server runs as a service that other apps can connect to | Best for most users - especially with LibreChat |
+| Direct connection (stdio) | The server runs directly on your computer | Useful for testing or development |
 
-## 📚 Where can I read more about MCP?
+## 📚 Learn more about MCP
 
 Here are a few resources to get you started:
 

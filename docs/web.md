@@ -1,54 +1,64 @@
 # Web Tool
 
-This tool is designed to let the LLM retrieve, extract, and process web content:
+1. [What can it do?](#what-can-it-do)
+2. [Processing Modes](#processing-modes)
+   1. [Markdown Mode (default)](#markdown-mode-default)
+   2. [Links Mode](#links-mode)
+   3. [Raw Mode](#raw-mode)
+3. [Features and Limits](#features-and-limits)
+   1. [Content Management](#content-management)
+   2. [Safety Features](#safety-features)
+
+A tool that lets AI assistants access and process web content safely. It can convert pages to
+markdown, extract links, or get raw content:
 
 ![Screenshot of GPT asked to research SSE in the MCP documentation and providing the answer after reading three different pages](./images/web-usage.png)
 
-The tool uses asynchronous HTTP requests via aiohttp, trafilatura for markdown extraction, and
-BeautifulSoup for parsing links. The User-Agent string is configurable via the `USER_AGENT`
-environment variable (defaults to a Firefox-compatible string).
+## What can it do?
 
-## Tool Schema
+When you ask the AI to access a website, it can:
 
-The description provided to the LLM explains why and when to use the tool:
+- Convert web pages into clean, readable markdown
+- Extract all the links from a page to help navigate
+- Get the raw content of any URL
+- Process the content to fit your needs
 
-> Use to access the internet when up-to-date information may help. You can navigate documentation,
-> or fetch code and data from the web, so use it whenever fresh information from the internet could
-> potentially improve the accuracy of your answer to the user.
+The tool handles all the technical details like following redirects, handling errors, and cleaning
+up messy HTML. It's designed to be both powerful and safe - handling complex web content while
+staying within resource limits.
 
-The arguments available are as follows:
+## Processing Modes
 
-| Argument  | Type    | Required | Default   | Description |
-|-----------|---------|----------|-----------|-------------|
-| url       | string  | Yes      | -         | URL to process. This can be any public web address, API endpoint, or location of a file on GitHub, etc. |
-| mode      | string  | No       | "markdown" | Processing mode. Allowed values: "markdown" (fetch & extract content into markdown), "raw" (retrieve raw content), and "links" (extract internal hyperlinks with anchor text). |
-| max_length| integer | No       | 0         | Maximum number of characters to return (0 is unlimited). In links mode, complete lines are added until the limit is met. |
+You can process web content in three ways:
 
-## Content Processing
+| Mode | What it does | Best for |
+|------|-------------|----------|
+| `markdown` | Converts the page to clean markdown | Reading articles or documentation |
+| `links` | Lists all internal links with their text | Navigating through websites |
+| `raw` | Gets the unprocessed content | Accessing APIs or raw data |
 
-The tool handles content processing based on the chosen mode.
+### Markdown Mode (default)
 
-### Default Processing (mode = "markdown")
+The default mode cleans up web pages and converts them to readable markdown:
 
-- Fetches the URL using aiohttp with the configured User-Agent.
-- Uses trafilatura to extract and transform the page content into markdown.
-  - Attempts to remove boilerplate such as headers, footers, navigation, and ads.
-  - Preserves key formatting like headings, lists, tables, and images.
-- If the extraction fails or no content is found, it falls back to the raw response while still
-  applying length limiting if specified.
+- Removes adverts, navigation, and other clutter
+- Keeps important formatting like headings and lists
+- Preserves images and tables
+- Falls back to raw content if conversion fails
+- Uses smart extraction to focus on the main content
 
 Example output:
 
 ```markdown
 Contents of https://example.com/article:
 
-# Article Title
+# Main Heading
 
-Main content paragraphs formatted in clean markdown...
+Article content in clean markdown format...
 
 ## Subheadings preserved
 
-* Lists maintained
+* Lists kept intact
 * With proper formatting
 
 ![Images kept with alt text](image.jpg)
@@ -58,22 +68,19 @@ Main content paragraphs formatted in clean markdown...
 | To     | Markdown  |
 ```
 
-### Raw Mode (mode = "raw")
+### Links Mode
 
-- Fetches the URL and returns its full, unprocessed content.
-- No attempts are made to clean up or reformat the content.
-- Useful when processing non-HTML content (such as JSON, XML, or code) or when extraction fails.
+This mode helps navigate through websites by extracting and processing links:
 
-### Link Processing (mode = "links")
+- Finds all links on the page
+- Converts relative URLs to absolute ones
+- Shows which text was used for each link
+- Orders links by how often they appear
+- Filters out external sites and JavaScript links
+- Preserves the first anchor text found for each link
+- Handles both relative and absolute URLs safely
 
-- Fetches the URL and parses the returned HTML using BeautifulSoup (with SoupStrainer for `<a>` tags).
-- Converts relative URLs to absolute URLs based on the provided URL.
-- Filters out external domains, JavaScript links, and anchor-only references.
-- Orders the links by frequency of appearance and preserves the anchor text from the first occurrence.
-- The `max_length` parameter is applied such that complete output lines are added until the limit
-  is reached.
-
-Example output (with default behavior):
+Example output:
 
 ```markdown
 All 45 links found on https://example.com
@@ -84,48 +91,52 @@ All 45 links found on https://example.com
 ...
 ```
 
-## Length Limiting
+### Raw Mode
 
-The `max_length` parameter always refers to the number of characters to return:
+When you need the original content without processing:
 
-- In "markdown" and "raw" modes, it acts as a character limit on the final output.
-- In "links" mode, it adds complete lines (each showing one link) until adding another full line
-  would exceed the specified limit.
-- When content is truncated due to the limit, an error message is appended (or prepended in the
-  case of markdown extraction failure).
+- Gets the exact content from the URL
+- Doesn't modify or clean the content
+- Useful for APIs or when markdown fails
+- Still respects length limits if set
+- Great for accessing JSON, XML, or raw code
 
-Example error message appended on truncation:
+## Features and Limits
 
-```xml
-<error>Content truncated. The output has been limited to {max_length} characters</error>
-```
+The tool includes several features to make web access safe and reliable:
 
-## Error Handling
+### Content Management
 
-The Web Tool returns clear and helpful error messages for common problems:
+- **Length Limits**: Control how much content to return
+  - Set `max_length` to limit characters (0 means no limit)
+  - Complete lines kept in links mode
+  - Warning shown when content is truncated:
 
-- For network or HTTP issues, the tool provides a readable error response to inform the LLM what
-  went wrong. For example:
+    ```xml
+    <error>Content truncated to 1000 characters</error>
+    ```
 
-```json
-[
-  {
-    "type": "text",
-    "text": "Failed to connect to http://thisdomaindoesntexist.example: 'Cannot connect to host thisdomaindoesntexist.example:80 ssl:default [Name or service not known]'"
-  }
-]
-```
+- **Error Handling**: Clear messages for common issues
+  - Connection problems: "Failed to connect to {url}: {reason}"
+  - Extraction issues: Falls back to raw content with warning
+  - Missing links: "No links found - may need JavaScript or auth"
+  - Invalid URLs: Returns helpful error message
+  - Timeouts: Shows how long it waited before giving up
 
-- If markdown extraction fails in "markdown" mode, the tool will prepend an error message before
-  returning the raw content:
+### Safety Features
 
-```xml
-<error>Extraction to markdown failed; returning raw content</error>
-```
+- **Content Processing**
+  - Uses `trafilatura` for smart content extraction
+  - `BeautifulSoup` for reliable HTML parsing
+  - Skips potentially harmful links
+  - Handles relative URLs safely
 
-- In "links" mode, if no links can be extracted (e.g., due to JavaScript requirements or
-  authentication), the tool responds with an error message such as:
+- **Network Safety**
+  - Configurable User-Agent string
+  - Follows redirects safely
+  - Validates URLs before accessing
+  - Handles network timeouts gracefully
+  - Filters out external and invalid links
 
-```markdown
-No links found on https://example.com - it may require JavaScript or authentication.
-```
+The tool aims to balance power with safety - giving AI assistants broad access to web content
+while maintaining security and providing clear feedback when things go wrong.
