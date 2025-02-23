@@ -29,12 +29,16 @@ SAFE_ENV_VARS = {
     "USER_AGENT",
 }
 
+
 def create_safe_env() -> dict[str, str]:
-    """Create a minimal environment with only safe variables."""
-    return {
-        k: v for k, v in os_environ.items() 
-        if k in SAFE_ENV_VARS
-    }
+    """
+    Create a minimal environment with only safe variables.
+
+    Returns:
+        A dictionary of safe environment variables
+    """
+    return {k: v for k, v in os_environ.items() if k in SAFE_ENV_VARS}
+
 
 def setup_sandbox() -> None:
     """Set up sandbox environment and resource limits."""
@@ -44,14 +48,18 @@ def setup_sandbox() -> None:
     resource.setrlimit(resource.RLIMIT_NPROC, (50, 50))
     resource.setrlimit(resource.RLIMIT_FSIZE, (50 * 1024 * 1024, 50 * 1024 * 1024))
     resource.setrlimit(resource.RLIMIT_CORE, (0, 0))
-    
+
     # Clear environment variables
     os.environ.clear()
     os.environ.update(create_safe_env())
 
+
 async def run_sandboxed(code: str, cmd: list[str], timeout: int | None = None) -> str:
     """
     Run a command on a temporary file containing the provided code.
+
+    Returns:
+        The output of the command
     """
     with TemporaryDirectory() as tmpdir:
         # Create a specific subdirectory for the script
@@ -84,6 +92,7 @@ async def run_sandboxed(code: str, cmd: list[str], timeout: int | None = None) -
 
         except Exception as e:
             return f"Execution failed: {str(e)!r}"
+
 
 async def tool_python(code: str, timeout: int = 5, lint: bool = False) -> str:
     """

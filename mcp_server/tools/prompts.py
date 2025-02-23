@@ -1,8 +1,8 @@
 """
 Tools prompt definitions for the MCP fetch server.
 
-Contains constant definitions that define available tools for fetching,
-linking, executing and linting Python code.
+Contains constant definitions that define available tools for fetching, linking, executing and
+linting Python code.
 """
 
 from typing import Final
@@ -13,10 +13,10 @@ TOOLS: Final[list[Tool]] = [
     Tool(
         name="web",
         description=(
-            "Use to access the internet when up-to-date information may help. You can "
-            "navigate documentation, or fetch code and data from the web, so use it "
-            "whenever fresh information from the internet could potentially improve "
-            "the accuracy of your answer to the user."
+            "Use to access the internet when up-to-date information may help. You can navigate "
+            "documentation, or fetch code and data from the web, so use it whenever fresh "
+            "information from the internet could potentially improve the accuracy of your answer "
+            "to the user."
         ),
         inputSchema={
             "type": "object",
@@ -34,12 +34,13 @@ TOOLS: Final[list[Tool]] = [
                     "default": "markdown",
                     "description": (
                         "Determines how to process the content:\n"
-                        "'markdown' formats a HTML page into efficient markdown, removing "
-                        "headers, navigation, ads, etc, so ideal for normal web pages;\n"
-                        "'raw' returns the unprocessed content, if you need to see raw HTML, "
-                        "or code, XML, JSON, etc.;\n"
-                        "'links' extracts a list of hyperlinks (with anchor text) from a HTML page, "
-                        "which can help you understand site structure or navigate documentation."
+                        "'markdown' formats a HTML page into efficient markdown, removing headers, "
+                        "navigation, ads, etc, so ideal for normal web pages;\n"
+                        "'raw' returns the unprocessed content, if you need to see raw HTML, or "
+                        "code, XML, JSON, etc.;\n"
+                        "'links' extracts a list of hyperlinks (with anchor text) from a HTML "
+                        "page, which can help you understand site structure or navigate "
+                        "documentation."
                     ),
                 },
                 "max_length": {
@@ -47,8 +48,8 @@ TOOLS: Final[list[Tool]] = [
                     "default": 0,
                     "description": (
                         "Limits the number of characters returned. A value of 0 means no limit. "
-                        "You could use this if you're only interested in the start of a file, but it's "
-                        "better to err on the side of having more context."
+                        "You could use this if you're only interested in the start of a file, but "
+                        "it's better to err on the side of having more context."
                     ),
                 },
             },
@@ -58,15 +59,15 @@ TOOLS: Final[list[Tool]] = [
     Tool(
         name="python",
         description=(
-            "Execute or lint Python code in a resource-limited sandbox. "
-            "It has internet access, with aiodns, aiohttp, bs4, numpy, pandas, and "
-            "requests installed, so you can now test and solve a number of problems "
-            "without needing to directly calculate it yourself. Depending on "
-            "your input parameters, this tool either runs the code or lints with Ruff, "
-            "so you can test code before running, or use Ruff to help debugging if "
-            "you get errors. The user can see the code you've submitted and the "
-            "raw returned response, but it's good etiquette to briefly summarise after "
-            "using this tool what you asked for and got back."
+            "Execute or lint Python code in a resource-limited sandbox.\n"
+            "It has internet access, with aiodns, aiohttp, bs4, numpy, pandas, and requests "
+            "installed, so you can now test and solve a number of problems without needing to "
+            "directly calculate it yourself.\n"
+            "Depending on your input parameters, this tool either runs the code or lints with "
+            "Ruff, so you can test code before running, or use Ruff to help debugging if you get "
+            "errors. The user can see the code you've submitted and the raw returned response, but "
+            "it's good etiquette to briefly summarise after using this tool what you asked for and "
+            "got back."
         ),
         inputSchema={
             "type": "object",

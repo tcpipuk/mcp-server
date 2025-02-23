@@ -1,14 +1,16 @@
 """Tool for retrieving and processing web content."""
 
 from __future__ import annotations
+
 from collections import Counter
 from urllib.parse import urljoin, urlparse
 
-from bs4 import BeautifulSoup, Tag, SoupStrainer
-from trafilatura import extract as trafilatura_extract
-
+from bs4 import BeautifulSoup, Tag
+from bs4.filter import SoupStrainer
 from mcp.shared.exceptions import McpError
 from mcp.types import INTERNAL_ERROR, ErrorData
+from trafilatura import extract as trafilatura_extract
+
 from .helpers import add_error, get_request
 
 
@@ -64,7 +66,7 @@ def parse_links(html: str, base_url: str) -> dict[str, str]:
         if not isinstance(a, Tag):
             continue
 
-        absolute_url = parse_link(a.get("href", ""), base_url, base_netloc, base_scheme)
+        absolute_url = parse_link(str(a.get("href", "")), base_url, base_netloc, base_scheme)
         if not absolute_url:
             continue
 
@@ -128,7 +130,7 @@ async def tool_web(url: str, mode: str = "markdown", max_length: int = 0) -> str
                 append=False,
             )
 
-    if mode in ("raw", "markdown"):
+    if mode in {"raw", "markdown"}:
         if max_length > 0 and len(extracted) > max_length:
             extracted = add_error(
                 extracted[:max_length],
@@ -138,25 +140,21 @@ async def tool_web(url: str, mode: str = "markdown", max_length: int = 0) -> str
 
         return f"Contents of {url}:\n\n{extracted}"
 
-    elif mode == "links":
+    if mode == "links":
         links = parse_links(downloaded, url)
         total_links = len(links)
         if not links:
             raise McpError(
                 ErrorData(
                     code=INTERNAL_ERROR,
-                    message=f"No links found on {url} - it may require JavaScript or authentication.",
-                )
+                    message=f"No links found on {url} - it may require JavaScript or auth.",
+                ),
             )
 
         # Prepare link lines.
         link_lines = []
         for link_url, title in links.items():
-            if title:
-                line = f"- {title}: {link_url}"
-            else:
-                line = f"- {link_url}"
-            link_lines.append(line)
+            link_lines.append(f"- {title}: {link_url}" if title else f"- {link_url}")
 
         # Build output with header.
         output_lines = []
@@ -175,19 +173,18 @@ async def tool_web(url: str, mode: str = "markdown", max_length: int = 0) -> str
             added_count += 1
 
         # Set an appropriate header.
-        if added_count < total_links:
-            header = f"{added_count} of {total_links} links returned on {url}"
-        else:
-            header = f"All {total_links} links found on {url}"
-
-        header_line = header + "\n"
-        output = header_line + "\n".join(output_lines)
-        return output
-
-    else:
-        raise McpError(
-            ErrorData(
-                code=INTERNAL_ERROR,
-                message=(f"Invalid mode '{mode}'. Expected one of: 'markdown', 'raw', or 'links'."),
-            )
+        header = (
+            f"{added_count} of {total_links} links returned on {url}"
+            if added_count < total_links
+            else f"All {total_links} links found on {url}"
         )
+
+        return f"{header}\n" + "\n".join(output_lines)
+
+    # Catch unexpected mode
+    raise McpError(
+        ErrorData(
+            code=INTERNAL_ERROR,
+            message=(f"Invalid mode '{mode}'. Expected one of: 'markdown', 'raw', or 'links'."),
+        ),
+    )
