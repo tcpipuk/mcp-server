@@ -19,6 +19,7 @@ dependencies = [
   "aiohttp>=3.11.12",
   "beautifulsoup4>=4.13.3",
   "mcp>=1.2.1",
+  "pyyaml>=6.0.2",
   "trafilatura>=2.0.0",
   "uvicorn>=0.34.0",
 ]

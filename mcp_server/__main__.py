@@ -9,8 +9,12 @@ from argparse import ArgumentParser
 from asyncio import CancelledError, run as asyncio_run
 from contextlib import suppress as contextlib_suppress
 from os import environ as os_environ
+from pathlib import Path
 
-from .server import serve
+from yaml import safe_load as yaml_safe_load
+
+from .server import MCPServer
+from .tools import tool_python, tool_web
 
 
 def main() -> None:
@@ -28,8 +32,12 @@ def main() -> None:
     if args.user_agent:
         os_environ["USER_AGENT"] = args.user_agent
 
+    config = yaml_safe_load(Path("tools.yaml").read_text(encoding="utf-8"))
+    config["tools"]["python"]["method"] = tool_python
+    config["tools"]["web"]["method"] = tool_web
+    server = MCPServer(config)
     with contextlib_suppress(KeyboardInterrupt, CancelledError):
-        asyncio_run(serve())
+        asyncio_run(server.serve())
 
 
 if __name__ == "__main__":

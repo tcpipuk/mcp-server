@@ -1,6 +1,7 @@
 # Build stage using uv with a frozen lockfile and dependency caching
 FROM ghcr.io/astral-sh/uv:python3.13-bookworm-slim AS uv
 WORKDIR /app
+ARG BUILD_ENV=prod
 
 # Enable bytecode compilation and copy mode
 ENV UV_COMPILE_BYTECODE=1 \
@@ -12,6 +13,11 @@ RUN --mount=type=cache,target=/root/.cache/uv \
   uv sync --frozen --no-install-project ${BUILD_ENV:+"--dev"} --no-editable
 
 # Add the rest of the project source code and install it
+COPY . .
+RUN --mount=type=cache,target=/root/.cache/uv \
+  uv sync --frozen ${BUILD_ENV:+"--dev"} --no-editable
+
+# Add the source code and install dependencies
 COPY . .
 RUN --mount=type=cache,target=/root/.cache/uv \
   uv sync --frozen ${BUILD_ENV:+"--dev"} --no-editable
@@ -39,11 +45,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   && rm -rf /root/.cache
 
 # Copy only necessary files from build stage
-COPY --from=uv --chown=app:app /app/mcp_server ./mcp_server/
-COPY --from=uv --chown=app:app /app/.venv ./.venv/
-COPY --from=uv --chown=app:app /app/pyproject.toml ./
-COPY --from=uv --chown=app:app /app/pytest.ini ./
-COPY --from=uv --chown=app:app /app/tests ./tests/
+COPY --from=uv --chown=app:app /app/ .
 
 # Switch to non-root user and set up environment
 USER app
