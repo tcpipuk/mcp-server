@@ -10,6 +10,7 @@ on:
 
 jobs:
   test:
+    name: Testing
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -43,6 +44,7 @@ jobs:
           echo '```' >> $GITHUB_STEP_SUMMARY
 
   build:
+    name: Build and push
     needs: test
     runs-on: ubuntu-latest
     steps:
