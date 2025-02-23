@@ -1,14 +1,23 @@
 # Web Tool
 
-This document describes the unified Web Tool that replaces the previous separate Fetch and Links tools. The tool is designed to let the LLM retrieve, extract, and process web content in one of three different modes. Use this tool when up-to-date information from the internet may be needed—whether to fetch and clean page content for easy reading, to get the raw content of a page (such as HTML, JSON, or code), or to extract internal links for further navigation.
+This document describes the unified Web Tool that replaces the previous separate Fetch and Links
+tools. The tool is designed to let the LLM retrieve, extract, and process web content in one of
+three different modes. Use this tool when up-to-date information from the internet may be
+needed, whether to fetch and clean page content for easy reading, to get the raw content of a page
+(such as HTML, JSON, or code), or to extract internal links for further navigation.
 
-The tool uses asynchronous HTTP requests via aiohttp, trafilatura for markdown extraction, and BeautifulSoup for parsing links. The User-Agent string is configurable via the `USER_AGENT` environment variable (defaults to a Firefox-compatible string).
+The tool uses asynchronous HTTP requests via aiohttp, trafilatura for markdown extraction, and
+BeautifulSoup for parsing links. The User-Agent string is configurable via the `USER_AGENT`
+environment variable (defaults to a Firefox-compatible string).
 
 ## Tool Schema
 
 The description provided to the LLM explains why and when to use the tool:
 
-> Use the web tool to access content on the internet. You can fetch and format pages into markdown for readability, retrieve raw content (including code, XML, JSON, etc.), or extract internal links with their anchor text to explore a website’s structure. Choose the appropriate mode based on your specific needs.
+> Use the web tool to access content on the internet. You can fetch and format pages into markdown
+> for readability, retrieve raw content (including code, XML, JSON, etc.), or extract internal
+> links with their anchor text to explore a website’s structure. Choose the appropriate mode based
+> on your specific needs.
 
 The arguments available are as follows:
 
@@ -28,7 +37,8 @@ The tool handles content processing based on the chosen mode.
 - Uses trafilatura to extract and transform the page content into markdown.
   - Attempts to remove boilerplate such as headers, footers, navigation, and ads.
   - Preserves key formatting like headings, lists, tables, and images.
-- If the extraction fails or no content is found, it falls back to the raw response while still applying length limiting if specified.
+- If the extraction fails or no content is found, it falls back to the raw response while still
+  applying length limiting if specified.
 
 Example output:
 
@@ -63,7 +73,8 @@ Main content paragraphs formatted in clean markdown...
 - Converts relative URLs to absolute URLs based on the provided URL.
 - Filters out external domains, JavaScript links, and anchor-only references.
 - Orders the links by frequency of appearance and preserves the anchor text from the first occurrence.
-- The `max_length` parameter is applied such that complete output lines are added until the limit is reached.
+- The `max_length` parameter is applied such that complete output lines are added until the limit
+  is reached.
 
 Example output (with default behavior):
 
@@ -79,9 +90,12 @@ All 45 links found on https://example.com
 ## Length Limiting
 
 The `max_length` parameter always refers to the number of characters to return:
+
 - In "markdown" and "raw" modes, it acts as a character limit on the final output.
-- In "links" mode, it adds complete lines (each showing one link) until adding another full line would exceed the specified limit.
-- When content is truncated due to the limit, an error message is appended (or prepended in the case of markdown extraction failure).
+- In "links" mode, it adds complete lines (each showing one link) until adding another full line
+  would exceed the specified limit.
+- When content is truncated due to the limit, an error message is appended (or prepended in the
+  case of markdown extraction failure).
 
 Example error message appended on truncation:
 
@@ -93,7 +107,8 @@ Example error message appended on truncation:
 
 The Web Tool returns clear and helpful error messages for common problems:
 
-- For network or HTTP issues, the tool provides a readable error response to inform the LLM what went wrong. For example:
+- For network or HTTP issues, the tool provides a readable error response to inform the LLM what
+  went wrong. For example:
 
 ```json
 [
@@ -104,13 +119,15 @@ The Web Tool returns clear and helpful error messages for common problems:
 ]
 ```
 
-- If markdown extraction fails in "markdown" mode, the tool will prepend an error message before returning the raw content:
+- If markdown extraction fails in "markdown" mode, the tool will prepend an error message before
+  returning the raw content:
 
 ```xml
 <error>Extraction to markdown failed; returning raw content</error>
 ```
 
-- In "links" mode, if no links can be extracted (e.g., due to JavaScript requirements or authentication), the tool responds with an error message such as:
+- In "links" mode, if no links can be extracted (e.g., due to JavaScript requirements or
+  authentication), the tool responds with an error message such as:
 
 ```markdown
 No links found on https://example.com - it may require JavaScript or authentication.
