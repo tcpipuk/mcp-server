@@ -10,7 +10,7 @@ on:
 
 jobs:
   test:
-    name: Testing
+    name: Pytest
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -44,7 +44,7 @@ jobs:
           echo '```' >> $GITHUB_STEP_SUMMARY
 
   build:
-    name: Build and push
+    name: Docker build
     needs: test
     runs-on: ubuntu-latest
     steps:
