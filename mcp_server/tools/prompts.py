@@ -67,7 +67,7 @@ TOOLS: Final[list[Tool]] = [
             "type": "object",
             "properties": {
                 "code": {"type": "string", "description": "Python code to use"},
-                "timeout": {
+                "time_limit": {
                     "type": "integer",
                     "default": 10,
                     "description": "Timeout in seconds for execution (ignored when linting)",
