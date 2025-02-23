@@ -59,7 +59,6 @@ jobs:
             name=ghcr.io/${{ github.repository }}
           tags: |
             type=raw,value=latest,enable={{is_default_branch}}
-            type=ref,event=release
             type=ref,event=branch
             type=ref,event=pr
             type=ref,event=tag
