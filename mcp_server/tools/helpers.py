@@ -73,7 +73,7 @@ async def get_request(url: str) -> str:
         errmsg = f"HTTP error while fetching {url}: {err.status} - {err.message}"
     except ClientError as err:
         errmsg = f"Network error while fetching {url}: {str(err)!r}"
-    except Exception as err:
+    except Exception as err:  # noqa: BLE001
         errmsg = f"Unexpected error while fetching {url}: {str(err)!r}"
 
     raise McpError(ErrorData(code=INTERNAL_ERROR, message=errmsg))
