@@ -49,4 +49,4 @@ split-on-trailing-comma = false
 convention = "google"
 
 [tool.uv]
-dev-dependencies = ["pytest>=8.3.4", "ruff>=0.9.6"]
+dev-dependencies = ["pytest>=8.3.4", "pytest-asyncio>=0.25.3", "ruff>=0.9.6"]
