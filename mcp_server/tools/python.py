@@ -84,28 +84,40 @@ class SandboxedPython:
         os_environ.clear()
         os_environ.update(original_env)
 
-    async def execute(self) -> tuple[bytes, bytes, str]:
+    async def execute(self) -> str:
         """Execute the code in the sandbox and return raw outputs.
 
         Returns:
-            Tuple of stdout, stderr, and error message
+            Tuple of stdout, stderr, error message, and process exit code
         """
         stdout = stderr = b""
         errmsg = ""
 
         try:
-            proc = await create_subprocess_exec(
-                *(
-                    [os_environ["SANDBOX_RUFF"], "check", "--output-format", "json"]
-                    if self.lint
-                    else [os_environ["SANDBOX_PYTHON"]]
-                ),
-                str(self._script_path),
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                preexec_fn=self.setup_sandbox,
-                cwd=self._script_path.parent,
-            )
+            # Set up command args and kwargs
+            kwargs = {
+                "stdout": subprocess.PIPE,
+                "stderr": subprocess.PIPE,
+                "cwd": self._script_path.parent,
+            }
+            if self.lint:
+                args = [
+                    os_environ["SANDBOX_RUFF"],
+                    "check",
+                    "--output-format",
+                    "json",
+                    "--select",
+                    "ALL",
+                    "--ignore",
+                    "COM812,CPY,D100,D203,D213,FBT,RUF029",
+                    str(self._script_path),
+                ]
+            else:
+                args = [os_environ["SANDBOX_PYTHON"], str(self._script_path)]
+                kwargs["preexec_fn"] = self.setup_sandbox
+
+            # Run process with appropriate command and kwargs
+            proc = await create_subprocess_exec(*args, **kwargs)
 
             if self.time_limit:
                 try:
@@ -126,16 +138,19 @@ class SandboxedPython:
         except Exception as exc:  # noqa: BLE001
             errmsg = f"Unexpected error: {exc.__class__.__name__}: {exc}"
 
-        return stdout, stderr, errmsg
+        return self.format_output(
+            stdout, stderr, errmsg, proc.returncode if isinstance(proc.returncode, int) else -1
+        )
 
     @staticmethod
-    def format_output(stdout: bytes, stderr: bytes, errmsg: str) -> str:
+    def format_output(stdout: bytes, stderr: bytes, errmsg: str, exit_code: int) -> str:
         """Format execution outputs into a readable string.
 
         Returns:
             String of formatted outputs
         """
         sections = []
+        sections.append(f"Exit code: {exit_code}")
         for section in {stdout, stderr, errmsg}:
             if isinstance(section, bytes):
                 section = section.decode(errors="replace")  # noqa: PLW2901
@@ -151,5 +166,4 @@ async def tool_python(code: str, time_limit: int = 5, lint: bool = False) -> str
         The output of code execution or the linting result
     """
     sandbox = SandboxedPython(code=code, time_limit=time_limit if not lint else None, lint=lint)
-    stdout, stderr, errmsg = await sandbox.execute()
-    return sandbox.format_output(stdout, stderr, errmsg)
+    return await sandbox.execute()

@@ -54,23 +54,22 @@ async def test_python_linting(sandbox_env) -> None:
     """Test Python code linting."""
     # Create code with multiple obvious linting issues
     code = """
-x=1 # Missing space after =
-y= 2 # Inconsistent spacing
-z ="test" # Missing space around operator
-print(x+y+z) # Missing spaces around operators
-"""
+def my_func():
+    print(f"{1+2}")  # T201 print found
+    undefined_var  # F821 undefined name
+    """
     result = await tool_python(code, lint=True)
 
     # Check if we got any output at all
     if not result.strip():
         pytest.fail(f"No linting output received. SANDBOX_RUFF={os_environ.get('SANDBOX_RUFF')}")
 
-    # Look for specific ruff error codes or common linting terms
-    expected_issues = ["E225", "E226", "missing whitespace", "operator"]
-    found_issues = [issue for issue in expected_issues if issue.lower() in result.lower()]
+    # Look for specific ruff error codes
+    expected_issues = ["T201", "F821"]
+    found_issues = all(issue in result for issue in expected_issues)
 
     if not found_issues:
-        pytest.fail(f"Expected at least one of {expected_issues} in linting output, got: {result}")
+        pytest.fail(f"Expected all of {expected_issues} in linting output, got: {result}")
 
 
 def test_sandbox_resource_limits() -> None:
