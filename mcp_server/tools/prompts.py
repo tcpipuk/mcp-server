@@ -63,8 +63,9 @@ TOOLS: Final[list[Tool]] = [
             "with Ruff. The user can see your code and its output, but the output is not well "
             "formatted, so it's good practice to briefly explain what you did and what the results "
             "show.\n\n"
-            "When quoting code (or console output) to the user, always use ``` backticks to format "
-            "codeblocks for them."
+            "When showing code or output to users, format it appropriately in markdown:\n"
+            "- Use ``` backticks for code and console output\n"
+            "- Use tables, lists or other markdown for structured data like pandas output"
         ),
         inputSchema={
             "type": "object",
