@@ -25,12 +25,51 @@ def get_workspace_dir() -> Path:
     return workspace
 
 
+def sanitise_path(path: str | Path) -> Path:
+    """Sanitise a path to ensure it cannot escape the workspace.
+
+    Returns:
+        Clean path relative to workspace root
+
+    Raises:
+        McpError: If path would escape workspace
+    """
+    try:
+        # Resolve any symlinks/dots/etc to get absolute path
+        clean = Path(path).resolve()
+        # Get relative path from workspace to target
+        relative = clean.relative_to(get_workspace_dir())
+        # Ensure no parts start with dots/hidden
+        if any(part.startswith(".") for part in relative.parts):
+            raise McpError(
+                ErrorData(
+                    code=INTERNAL_ERROR, message="Path cannot contain hidden/special components"
+                )
+            )
+    except ValueError as exc:
+        raise McpError(
+            ErrorData(code=INTERNAL_ERROR, message="Path cannot escape workspace root")
+        ) from exc
+    else:
+        return relative
+
+
+def ensure_parent_dirs(path: Path) -> None:
+    """Create parent directories for a path if they don't exist.
+
+    Raises:
+        McpError: If directory creation fails
+    """
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+    except OSError as exc:
+        raise McpError(
+            ErrorData(code=INTERNAL_ERROR, message=f"Failed to create directories: {exc}")
+        ) from exc
+
+
 def format_output(stdout: bytes, stderr: bytes) -> str:
     """Format command outputs into a readable string.
-
-    Args:
-        stdout: Raw stdout bytes from the command
-        stderr: Raw stderr bytes from the command
 
     Returns:
         String of formatted outputs
@@ -46,14 +85,8 @@ def format_output(stdout: bytes, stderr: bytes) -> str:
 
 async def run_command(
     args: list[str], *, cwd: str | Path, error_prefix: str, input_data: bytes | None = None
-) -> tuple[str, str]:
+) -> str:
     """Run a command and handle errors consistently.
-
-    Args:
-        args: Command and arguments to execute
-        cwd: Working directory for the command
-        error_prefix: Prefix for error messages if the command fails
-        input_data: Optional bytes to write to stdin
 
     Returns:
         Tuple of (stdout string, stderr string)
@@ -66,16 +99,12 @@ async def run_command(
             *args, stdout=asyncio_subprocess.PIPE, stderr=asyncio_subprocess.PIPE, cwd=str(cwd)
         )
         stdout, stderr = await process.communicate(input=input_data)
-
         if process.returncode != 0:
             raise McpError(  # noqa: TRY301
                 ErrorData(
                     code=INTERNAL_ERROR, message=f"{error_prefix}: {format_output(stdout, stderr)}"
                 )
             )
-
-        return stdout.decode(errors="replace"), stderr.decode(errors="replace")
-
     except McpError:
         raise
     except OSError as exc:
@@ -85,6 +114,30 @@ async def run_command(
             ErrorData(
                 code=INTERNAL_ERROR, message=f"Unexpected error: {exc.__class__.__name__}: {exc}"
             )
+        ) from exc
+    else:
+        return format_output(stdout, stderr)
+
+
+async def read_file(path: Path, max_length: int = 0) -> dict[str, str | bool]:
+    """Read a file with optional length limit.
+
+    Returns:
+        Dict with content and truncation status
+
+    Raises:
+        McpError: If file cannot be read
+    """
+    try:
+        with path.open("rb") as f:
+            data = f.read(max_length) if max_length > 0 else f.read()
+        return {
+            "content": data.decode("utf-8", errors="replace"),
+            "truncated": max_length > 0 and len(data) >= max_length,
+        }
+    except OSError as exc:
+        raise McpError(
+            ErrorData(code=INTERNAL_ERROR, message=f"Error reading file: {exc}")
         ) from exc
 
 
@@ -98,12 +151,11 @@ async def tool_workspace_tree(path: str = ".") -> str:
         JSON formatted string of the directory tree output.
     """
     workspace = get_workspace_dir()
-    stdout, _ = await run_command(
-        ["tree", "-aiJ", "-I", ".git", "--gitignore", path],
+    return await run_command(
+        ["tree", "-aiJ", "-I", ".git", "--gitignore", str(sanitise_path(path))],
         cwd=workspace,
         error_prefix="Tree command failed",
     )
-    return stdout
 
 
 async def tool_workspace_read(files: list[str], max_length: int = 65535) -> str:
@@ -124,26 +176,20 @@ async def tool_workspace_read(files: list[str], max_length: int = 65535) -> str:
 
     try:
         for file in files:
-            file_path = workspace / file
             try:
+                file_path = workspace / sanitise_path(file)
                 if not file_path.exists():
                     results["files"][file] = {"error": f"File not found: {file}"}
                 else:
-                    with file_path.open("rb") as f:
-                        data = f.read(max_length) if max_length > 0 else f.read()
-                    results["files"][file] = {
-                        "content": data.decode("utf-8", errors="replace"),
-                        "truncated": max_length > 0 and len(data) >= max_length,
-                    }
-            except OSError as exc:
-                results["files"][file] = {"error": f"Error reading file: {exc}"}
+                    results["files"][file] = await read_file(file_path, max_length)
+            except McpError as exc:
+                results["files"][file] = {"error": str(exc)}
 
         if all("error" in info for info in results["files"].values()):
             raise McpError(  # noqa: TRY301
                 ErrorData(code=INTERNAL_ERROR, message="Failed to read any of the requested files")
             )
-
-        return json_dumps(results, indent=2)
+        return json_dumps(results)
 
     except McpError:
         raise
@@ -171,26 +217,28 @@ async def tool_workspace_write(path: str, content: str, mode: str = "overwrite")
         McpError: If the write operation fails or if mode is invalid.
     """
     workspace = get_workspace_dir()
-    file_path = workspace / path
+    file_path = workspace / sanitise_path(path)
 
     try:
         if mode == "overwrite":
-            file_path.parent.mkdir(parents=True, exist_ok=True)
+            ensure_parent_dirs(file_path)
             file_path.write_text(content, encoding="utf-8")
             return f"File '{path}' written successfully."
 
         if mode == "patch":
+            ensure_parent_dirs(file_path)
             if not file_path.exists():
-                file_path.parent.mkdir(parents=True, exist_ok=True)
                 file_path.touch()
 
-            stdout, stderr = await run_command(
-                ["patch", str(file_path)],
-                cwd=file_path.parent,
-                error_prefix="Patch failed",
-                input_data=content.encode("utf-8"),
+            return (
+                await run_command(
+                    ["patch", str(file_path)],
+                    cwd=file_path.parent,
+                    error_prefix="Patch failed",
+                    input_data=content.encode("utf-8"),
+                )
+                or "Patch applied successfully."
             )
-            return format_output(stdout.encode(), stderr.encode()) or "Patch applied successfully."
 
         raise McpError(  # noqa: TRY301
             ErrorData(
@@ -221,10 +269,10 @@ async def tool_workspace_git(command: str, cwd: str = ".") -> str:
         Output of the git command.
     """
     workspace = get_workspace_dir()
-    work_dir = workspace / cwd
-    work_dir.mkdir(parents=True, exist_ok=True)
+    work_dir = workspace / sanitise_path(cwd)
+    ensure_parent_dirs(work_dir)
 
-    stdout, stderr = await run_command(
-        shlex_split(command), cwd=work_dir, error_prefix="Git command failed"
+    return (
+        await run_command(shlex_split(command), cwd=work_dir, error_prefix="Git command failed")
+        or "Git command completed successfully."
     )
-    return format_output(stdout.encode(), stderr.encode()) or "Git command completed successfully."
