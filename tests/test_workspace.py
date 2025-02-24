@@ -3,8 +3,8 @@
 from __future__ import annotations
 
 from json import loads as json_loads
+from os import geteuid as os_geteuid
 from pathlib import Path
-from typing import TYPE_CHECKING
 
 import pytest
 from mcp.shared.exceptions import McpError
@@ -181,10 +181,11 @@ def test_ensure_parent_dirs(workspace: Path) -> None:
     # Test with existing directories
     ensure_parent_dirs(test_path)  # Should not raise
 
-    # Test with unwritable directory
-    if not TYPE_CHECKING:  # Skip this test when type checking
-        unwritable = workspace / "unwritable"
-        unwritable.mkdir()
-        unwritable.chmod(0o555)  # Non-writable (read & execute only)
-        with pytest.raises(McpError, match="Failed to create directories"):
-            ensure_parent_dirs(unwritable / "test.txt")
+    # Test with unwritable directory. Skip if running as root.
+    if os_geteuid() == 0:
+        pytest.skip("Skipping unwritable directory test when running as root")
+    unwritable = workspace / "unwritable"
+    unwritable.mkdir()
+    unwritable.chmod(0o555)  # Non-writable (read & execute only)
+    with pytest.raises(McpError, match="Failed to create directories"):
+        ensure_parent_dirs(unwritable / "test.txt")
