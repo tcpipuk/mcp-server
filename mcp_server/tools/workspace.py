@@ -34,24 +34,29 @@ def sanitise_path(path: str | Path) -> Path:
     Raises:
         McpError: If path would escape workspace
     """
-    try:
-        # Resolve any symlinks/dots/etc to get absolute path
-        clean = Path(path).resolve()
-        # Get relative path from workspace to target
-        relative = clean.relative_to(get_workspace_dir())
-        # Ensure no parts start with dots/hidden
-        if any(part.startswith(".") for part in relative.parts):
-            raise McpError(
-                ErrorData(
-                    code=INTERNAL_ERROR, message="Path cannot contain hidden/special components"
-                )
-            )
-    except ValueError as exc:
+    # Convert to Path and normalise
+    clean = Path(path).parts
+
+    # Handle empty paths (e.g. "." or "")
+    if not clean:
+        return Path()
+
+    # Block absolute paths and parent directory traversal
+    if clean[0] == "/" or ".." in clean:
         raise McpError(
-            ErrorData(code=INTERNAL_ERROR, message="Path cannot escape workspace root")
-        ) from exc
-    else:
-        return relative
+            ErrorData(
+                code=INTERNAL_ERROR, message="Path cannot be absolute or contain parent traversal"
+            )
+        )
+
+    # Ensure no parts start with dots/hidden
+    if any(part.startswith(".") for part in clean):
+        raise McpError(
+            ErrorData(code=INTERNAL_ERROR, message="Path cannot contain hidden/special components")
+        )
+
+    # Join parts to create clean relative path
+    return Path(*clean)
 
 
 def ensure_parent_dirs(path: Path) -> None:
@@ -61,7 +66,12 @@ def ensure_parent_dirs(path: Path) -> None:
         McpError: If directory creation fails
     """
     try:
-        path.parent.mkdir(parents=True, exist_ok=True)
+        parent = path.parent
+        parent.mkdir(parents=True, exist_ok=True)
+        # Test we can actually write to the directory
+        test_file = parent / ".write_test"
+        test_file.touch()
+        test_file.unlink()
     except OSError as exc:
         raise McpError(
             ErrorData(code=INTERNAL_ERROR, message=f"Failed to create directories: {exc}")
@@ -185,14 +195,8 @@ async def tool_workspace_read(files: list[str], max_length: int = 65535) -> str:
             except McpError as exc:
                 results["files"][file] = {"error": str(exc)}
 
-        if all("error" in info for info in results["files"].values()):
-            raise McpError(  # noqa: TRY301
-                ErrorData(code=INTERNAL_ERROR, message="Failed to read any of the requested files")
-            )
         return json_dumps(results)
 
-    except McpError:
-        raise
     except Exception as exc:
         raise McpError(
             ErrorData(
@@ -232,7 +236,7 @@ async def tool_workspace_write(path: str, content: str, mode: str = "overwrite")
 
             return (
                 await run_command(
-                    ["patch", str(file_path)],
+                    ["patch", "-p0", str(file_path)],
                     cwd=file_path.parent,
                     error_prefix="Patch failed",
                     input_data=content.encode("utf-8"),
