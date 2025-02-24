@@ -12,8 +12,8 @@ RUN --mount=type=cache,target=/root/.cache/uv \
   uv sync --frozen --no-install-project ${BUILD_ENV:+"--dev"} --no-editable
 
 # Create sandbox venv and install its dependencies
-RUN python -m venv /app/sandbox-venv && \
-  --mount=type=cache,target=/root/.cache/uv \
+RUN python -m venv /app/sandbox-venv
+RUN --mount=type=cache,target=/root/.cache/uv \
   /app/sandbox-venv/bin/uv pip install \
   aiodns \
   aiohttp \

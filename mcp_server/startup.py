@@ -21,7 +21,12 @@ SSH_AGENT_NOT_RUNNING = 2
 # Validation patterns
 GIT_NAME_PATTERN = re.compile(r"^[a-zA-Z0-9\s._-]+$")
 GIT_EMAIL_PATTERN = re.compile(r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$")
-SSH_KEY_PATTERN = re.compile(r"^[-A-Za-z0-9+/=\s]+$")  # Base64 + whitespace
+SSH_KEY_PATTERN = re.compile(
+    r"^-----BEGIN [A-Z\s]+ PRIVATE KEY-----\n"
+    r"[A-Za-z0-9+/=\s]+\n"
+    r"-----END [A-Z\s]+ PRIVATE KEY-----\n?$",
+    re.MULTILINE,
+)
 
 
 def _get_command_path(command: str) -> str:
@@ -73,11 +78,14 @@ def _validate_ssh_key(key: str) -> None:
     """Validate SSH key format.
 
     Raises:
-        McpError: If key contains invalid characters
+        McpError: If key format is invalid
     """
     if not SSH_KEY_PATTERN.match(key):
         raise McpError(
-            ErrorData(code=INTERNAL_ERROR, message="SSH key contains invalid characters")
+            ErrorData(
+                code=INTERNAL_ERROR,
+                message="Invalid SSH key format - must be a PEM formatted private key",
+            )
         )
 
 
