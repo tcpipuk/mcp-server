@@ -40,7 +40,7 @@ skip-magic-trailing-comma = true
 
 [tool.ruff.lint]
 select = ["ALL"]
-ignore = ["COM812", "CPY", "D203", "D213", "FBT", "RUF029"]
+ignore = ["COM812", "CPY", "D203", "D213", "FBT", "RUF029", "RUF100"]
 
 [tool.ruff.lint.isort]
 combine-as-imports = true
