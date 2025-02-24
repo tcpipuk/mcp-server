@@ -120,7 +120,7 @@ tools:
           type: string
           description: >
             New file content (for overwrite mode) or unified diff patch (for patch mode).
-            Patches must include @@ line and match current content correctly.
+            Patches must include @@ line(s) and match current content correctly.
         mode:
           type: string
           enum: ["overwrite", "patch"]
