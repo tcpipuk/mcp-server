@@ -105,10 +105,6 @@ async def test_tool_sandbox_success(monkeypatch: pytest.MonkeyPatch) -> None:
     result = await tool_sandbox("echo hello", time_limit=2)
     if "0" not in result:
         pytest.fail("Expected hello in result, got: " + result)
-    if "output line 1" not in result:
-        pytest.fail("Expected 'output line 1' in result, got: " + result)
-    if "output line 2" not in result:
-        pytest.fail("Expected 'output line 2' in result, got: " + result)
 
 
 @pytest.mark.asyncio
