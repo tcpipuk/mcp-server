@@ -7,7 +7,7 @@ WORKDIR /opt
 # Configure uv behaviour
 ENV UV_COMPILE_BYTECODE=1 \
   UV_LINK_MODE=copy \
-  UV_SYSTEM_PYTHON=0
+  UV_PYTHON_PREFERENCE=only-managed
 
 # Install Python dependencies
 # Uses build cache for faster subsequent builds
