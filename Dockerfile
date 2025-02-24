@@ -20,6 +20,7 @@ RUN --mount=type=cache,target=/root/.cache/uv \
   aiodns \
   aiohttp \
   beautifulsoup4 \
+  GitPython \
   numpy \
   pandas \
   requests \
