@@ -2,7 +2,7 @@
 name = "mcp-sandbox"
 version = "0.1.0"
 description = "Small Ubuntu environment to provide LLMs with shell access"
-readme = "README.md"
+readme = "../README.md"
 requires-python = ">=3.13"
 dependencies = [
   "aiodns>=3.2.0",
