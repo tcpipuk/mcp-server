@@ -17,6 +17,6 @@ echo "Listening for connections on 0.0.0.0:8080"
 # Start socat as sandbox user with pseudo-terminal
 exec socat \
   TCP-LISTEN:8080,fork,reuseaddr,bind=0.0.0.0 \
-  EXEC:"/tmp/shell_wrapper.sh",pty,stderr,setsid,sigint,sane
+  EXEC:"/tmp/shell_wrapper.sh",pty,stderr,setsid,sigint,sane,raw,echo=0,closedown
 
 echo "Stopping sandbox service..."
