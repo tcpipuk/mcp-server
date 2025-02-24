@@ -27,6 +27,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   git \
   screen \
   socat \
+  tree \
   && rm -rf /var/lib/apt/lists/* \
   # Create sandbox user and group
   && groupadd -g 1000 sandbox \
