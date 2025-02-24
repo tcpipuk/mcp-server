@@ -53,6 +53,9 @@ ENV LANG=C.UTF-8 \
   PYTHONDONTWRITEBYTECODE=1 \
   PYTHONUNBUFFERED=1
 
+# Expose port for TCP connections
+EXPOSE 8080
+
 # Set working directory and entrypoint
 WORKDIR /workspace
 ENTRYPOINT ["/entrypoint.sh"]
