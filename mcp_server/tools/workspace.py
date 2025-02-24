@@ -39,7 +39,7 @@ def format_output(stdout: bytes, stderr: bytes) -> str:
     for section in {stdout, stderr}:
         if isinstance(section, bytes):
             section = section.decode(errors="replace")  # noqa: PLW2901
-        if section := section.strip():
+        if isinstance(section, str) and (section := section.strip()):
             sections.append(section)
     return "\n".join(sections)
 
