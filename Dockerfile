@@ -43,8 +43,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   && mkdir -p /workspace \
   && chown app:app /workspace \
   && mkdir -p -m 700 ~/.ssh \
-  && chown app:app ~/.ssh \
-  && chmod +x /app/docker-entrypoint.sh
+  && chown app:app ~/.ssh
 
 # Copy only necessary files from build stage
 COPY --from=uv --chown=app:app /app/ .
