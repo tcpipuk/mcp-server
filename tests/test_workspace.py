@@ -185,6 +185,6 @@ def test_ensure_parent_dirs(workspace: Path) -> None:
     if not TYPE_CHECKING:  # Skip this test when type checking
         unwritable = workspace / "unwritable"
         unwritable.mkdir()
-        unwritable.chmod(0o444)  # Read-only
+        unwritable.chmod(0o555)  # Non-writable (read & execute only)
         with pytest.raises(McpError, match="Failed to create directories"):
             ensure_parent_dirs(unwritable / "test.txt")

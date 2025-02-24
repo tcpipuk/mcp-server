@@ -295,14 +295,26 @@ async def tool_workspace_git(command: str, cwd: str = ".") -> str:
     """Execute a git command within the workspace.
 
     Args:
-        command: Full git command to execute (e.g. "git clone git@github.com:user/repo.git").
-        cwd: Working directory relative to workspace root (defaults to ".").
+        command: Full git command to execute (e.g. "git clone git@github.com:user/repo.git")
+        cwd: Working directory relative to workspace root (defaults to ".")
 
     Returns:
-        Output of the git command.
+        Output of the git command
+
+    Raises:
+        McpError: If the git command fails or if the working directory cannot be sanitised
     """
     workspace = get_workspace_dir()
     work_dir = workspace / sanitise_path(cwd)
     # Ensure the working directory exists
     work_dir.mkdir(parents=True, exist_ok=True)
-    return await run_command(shlex_split(command), cwd=work_dir, error_prefix="Git command failed")
+    try:
+        return await run_command(
+            shlex_split(command), cwd=work_dir, error_prefix="Git command failed"
+        )
+    except McpError as err:
+        # Allow sanitisation errors to propagate.
+        if "escape workspace" in str(err):
+            raise
+        # Otherwise, return the error message as a string.
+        return str(err)
