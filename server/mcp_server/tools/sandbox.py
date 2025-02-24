@@ -148,7 +148,7 @@ class ShellConnection:
         return "".join(buffer)
 
 
-async def tool_sandbox(command: str, time_limit: int = DEFAULT_TIMEOUT) -> str:
+async def tool_sandbox(commands: str, time_limit: int = DEFAULT_TIMEOUT) -> str:
     """Execute shell commands in the sandbox environment.
 
     Args:
@@ -159,5 +159,5 @@ async def tool_sandbox(command: str, time_limit: int = DEFAULT_TIMEOUT) -> str:
         Command output formatted as a string
     """
     conn = await ShellConnection.connect()
-    result = await conn.run_command(command, time_limit)
+    result = await conn.run_command(commands, time_limit)
     return result.formatted_output
