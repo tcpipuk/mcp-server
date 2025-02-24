@@ -1,0 +1,34 @@
+services:
+  mcp-server:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    environment:
+      - SSE_HOST=0.0.0.0
+      - SSE_PORT=8080
+      - SANDBOX_SOCKET=/run/sandbox/shell.sock
+      - USER_AGENT=CustomAgent/1.0
+    volumes:
+      - sandbox_sockets:/run/sandbox
+    image: ghcr.io/tcpipuk/mcp-server:latest
+    networks:
+      - mcp_net
+    restart: unless-stopped
+    stop_grace_period: 1s
+
+  sandbox:
+    build:
+      context: ./sandbox
+      dockerfile: Dockerfile
+    environment:
+      - SANDBOX_SOCKET=/run/sandbox/shell.sock
+    image: ghcr.io/tcpipuk/mcp-sandbox:latest
+    volumes:
+      - sandbox_home:/home/sandbox
+      - sandbox_sockets:/run/sandbox
+    networks:
+      - mcp_net
+    restart: unless-stopped
+
+volumes:
+  sandbox_home:

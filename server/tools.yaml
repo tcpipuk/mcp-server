@@ -38,7 +38,8 @@ tools:
       properties:
         url:
           type: string
-          description: URL to access - could be a web page, API endpoint, or a file on GitHub, etc.
+          description: URL to access - could be a web page, API endpoint, or a
+            file on GitHub, etc.
         mode:
           type: string
           enum:
@@ -58,10 +59,9 @@ tools:
       required: ["url"]
 
   workspace_git:
-    description: >
-      Run git commands in the workspace. Useful for cloning repositories, managing
-      branches, committing changes, etc. Authentication for SSH operations uses the
-      provided private key.
+    description: Run git commands in the workspace. Useful for cloning
+      repositories, managing branches, committing changes, etc. Authentication
+      for SSH operations uses the provided private key.
     inputSchema:
       type: object
       properties:
@@ -75,9 +75,9 @@ tools:
       required: ["command"]
 
   workspace_read:
-    description: >
-      Read the contents of one or more files from the workspace. Files are returned
-      with their paths and contents. Large files can be limited using max_length.
+    description: Read the contents of one or more files from the workspace.
+      Files are returned with their paths and contents. Large files can be
+      limited using max_length.
     inputSchema:
       type: object
       properties:
@@ -93,23 +93,23 @@ tools:
       required: ["files"]
 
   workspace_tree:
-    description: >
-      List files and directories in the workspace, similar to the Unix tree command.
-      Outputs JSON format for easier parsing. Respects .gitignore and hides .git
-      directory to save space.
+    description: List files and directories in the workspace, similar to the
+      Unix `tree` command. Outputs JSON format for easier parsing. Respects
+      .gitignore and hides .git directory to save space.
     inputSchema:
       type: object
       properties:
         path:
           type: string
-          description: Optional subdirectory within workspace to list (defaults to workspace root)
+          description: Optional subdirectory within workspace to list (defaults
+            to workspace root)
           default: "."
       required: []
 
   workspace_write:
-    description: >
-      Write or update a file in the workspace. Can either overwrite the entire file
-      or apply a diff patch. Creates parent directories if needed.
+    description: Write or update a file in the workspace. Can either
+      overwrite the entire file or apply a diff patch. Creates parent
+      directories if needed.
     inputSchema:
       type: object
       properties:
@@ -118,12 +118,45 @@ tools:
           description: Path to write to, relative to workspace root
         content:
           type: string
-          description: >
-            New file content (for overwrite mode) or unified diff patch (for patch mode).
-            Patches must include @@ line(s) and match current content correctly.
+          description: New file content (for overwrite mode) or unified diff
+            patch (for patch mode). Patches must include @@ line(s) and match
+            current content correctly.
         mode:
           type: string
           enum: ["overwrite", "patch"]
           default: "overwrite"
-          description: Whether to overwrite the file or apply content as a diff patch
+          description: Whether to overwrite file or apply content as a diff patch.
       required: ["path", "content"]
+
+  shell:
+    description: >
+      Execute commands in a persistent Linux environment with common development
+      tools. The environment persists between commands and includes Python, git,
+      and standard Unix tools. Commands can run in named screen sessions that
+      persist even after timeouts. Use this to:
+      - Set up and manage development environments
+      - Run long-running processes in screen sessions
+      - Work with files that persist between commands
+    inputSchema:
+      type: object
+      properties:
+        command:
+          type: string
+          description: Shell commands to execute. Multiple lines will be
+            submitted as provided.
+        cwd:
+          type: string
+          description: Working directory for the command
+          default: "~"
+        screen:
+          type: string
+          description: Name of screen session to use. If provided, the command
+            runs in this session. The session is created if it doesn't exist, or
+            resumed if it does. A random session name is generated if not provided.
+            The stdio and stderr is returned and the session is detached after the
+            time expires (including any `screen` output since the last detatch).
+        timeout:
+          type: integer
+          default: 5
+          description: Time to wait for command output in seconds
+      required: ["command"]
