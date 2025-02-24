@@ -5,6 +5,10 @@ from __future__ import annotations
 from os import environ as os_environ
 from pathlib import Path
 from sys import executable as sys_executable, prefix as sys_prefix
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from collections.abc import Generator
 
 import pytest
 
@@ -12,7 +16,7 @@ from mcp_server.tools.python import SandboxedPython, tool_python
 
 
 @pytest.fixture
-def sandbox_env():
+def sandbox_env() -> Generator[None]:
     """Set up sandbox environment variables for testing."""
     os_environ["SANDBOX_PYTHON"] = sys_executable
     os_environ["SANDBOX_RUFF"] = str(Path(sys_prefix) / "bin" / "ruff")
@@ -23,7 +27,8 @@ def sandbox_env():
 
 
 @pytest.mark.asyncio
-async def test_basic_python_execution(sandbox_env) -> None:
+@pytest.mark.usefixtures("sandbox_env")
+async def test_basic_python_execution() -> None:
     """Test basic Python code execution."""
     code = 'print("Hello, World!")'
     result = await tool_python(code)
@@ -32,7 +37,8 @@ async def test_basic_python_execution(sandbox_env) -> None:
 
 
 @pytest.mark.asyncio
-async def test_python_execution_with_error(sandbox_env) -> None:
+@pytest.mark.usefixtures("sandbox_env")
+async def test_python_execution_with_error() -> None:
     """Test Python code execution with syntax error."""
     code = 'print("Unclosed string'
     result = await tool_python(code)
@@ -41,7 +47,8 @@ async def test_python_execution_with_error(sandbox_env) -> None:
 
 
 @pytest.mark.asyncio
-async def test_python_timeout(sandbox_env) -> None:
+@pytest.mark.usefixtures("sandbox_env")
+async def test_python_timeout() -> None:
     """Test Python code execution timeout."""
     code = "while True: pass"
     result = await tool_python(code, time_limit=1)
@@ -50,7 +57,8 @@ async def test_python_timeout(sandbox_env) -> None:
 
 
 @pytest.mark.asyncio
-async def test_python_linting(sandbox_env) -> None:
+@pytest.mark.usefixtures("sandbox_env")
+async def test_python_linting() -> None:
     """Test Python code linting."""
     # Create code with multiple obvious linting issues
     code = """
@@ -76,16 +84,19 @@ def test_sandbox_resource_limits() -> None:
     """Test sandbox resource limits are set correctly."""
     sandbox = SandboxedPython("print('test')")
 
+    # Get references to avoid repeated private member access
+    temp_dir = sandbox._temp_dir  # noqa: SLF001
+    script_path = sandbox._script_path  # noqa: SLF001
+
     # Test temporary directory creation
-    if not sandbox._temp_dir.exists():
+    if not temp_dir.exists():
         pytest.fail("Temporary directory was not created")
-    if not sandbox._script_path.exists():
+    if not script_path.exists():
         pytest.fail("Script file was not created")
-    if sandbox._script_path.read_text() != "print('test')":
-        pytest.fail(f"Unexpected script content: {sandbox._script_path.read_text()}")
+    if script_path.read_text() != "print('test')":
+        pytest.fail(f"Unexpected script content: {script_path.read_text()}")
 
     # Test cleanup
-    temp_dir = sandbox._temp_dir
     del sandbox
     if temp_dir.exists():
         pytest.fail("Temporary directory was not cleaned up")

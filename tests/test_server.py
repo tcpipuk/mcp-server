@@ -14,7 +14,6 @@ from mcp_server.tools import tool_python, tool_web
 
 if TYPE_CHECKING:
     from collections.abc import Generator
-    from pathlib import Path
 
 
 @pytest.fixture
@@ -109,7 +108,8 @@ def test_server_initialisation(server: MCPServer) -> None:
 
 
 @pytest.mark.asyncio
-async def test_server_environment(server_env: None) -> None:
+@pytest.mark.usefixtures("server_env")
+async def test_server_environment() -> None:
     """Test that environment variables are correctly set."""
     if os_environ["SSE_HOST"] != "127.0.0.1":
         pytest.fail(f"Incorrect SSE_HOST: {os_environ['SSE_HOST']}")
