@@ -11,6 +11,18 @@ COPY pyproject.toml uv.lock ./
 RUN --mount=type=cache,target=/root/.cache/uv \
   uv sync --frozen --no-install-project ${BUILD_ENV:+"--dev"} --no-editable
 
+# Create sandbox venv and install its dependencies
+RUN python -m venv /app/sandbox-venv && \
+  --mount=type=cache,target=/root/.cache/uv \
+  /app/sandbox-venv/bin/uv pip install \
+  aiodns \
+  aiohttp \
+  beautifulsoup4 \
+  ruff \
+  numpy \
+  pandas \
+  requests
+
 # Add the source code and install main project dependencies
 COPY . .
 RUN --mount=type=cache,target=/root/.cache/uv \
@@ -21,23 +33,12 @@ FROM python:3.13-slim-bookworm AS runtime
 WORKDIR /app
 ARG BUILD_ENV=prod
 
-# Install system dependencies, missing commands, create user, and ensure /workspace is writable
+# Install minimal system dependencies, create user, and ensure /workspace is writable
 RUN apt-get update && apt-get install -y --no-install-recommends \
-  build-essential \
   git \
   openssh-client \
   tree \
   && rm -rf /var/lib/apt/lists/* \
-  && python -m venv /app/sandbox-venv \
-  && /app/sandbox-venv/bin/pip install --no-cache-dir \
-  aiodns \
-  aiohttp \
-  beautifulsoup4 \
-  ruff \
-  numpy \
-  pandas \
-  requests \
-  && rm -rf /root/.cache \
   && groupadd -r app \
   && useradd -r -g app app \
   && mkdir -p /workspace \
