@@ -32,17 +32,29 @@ def sanitise_path(path: str | Path) -> Path:
         Clean path relative to workspace root
 
     Raises:
-        McpError: If path would escape workspace
+        McpError: If path would escape workspace or contains hidden/special components.
     """
     try:
+        # First check for obvious escape attempts
+        path_str = str(path)
+        if path_str.startswith(("..", "/")):
+            raise McpError(
+                ErrorData(code=INTERNAL_ERROR, message="Path cannot escape workspace root")
+            )
+
         # Convert to Path and resolve against workspace
         workspace = get_workspace_dir()
         clean = (workspace / Path(path)).resolve()
+
         # Ensure path is within workspace
         if not clean.is_relative_to(workspace):
-            raise McpError(ErrorData(code=INTERNAL_ERROR, message="Path escapes workspace"))
+            raise McpError(
+                ErrorData(code=INTERNAL_ERROR, message="Path cannot escape workspace root")
+            )
+
         # Get relative path from workspace
         relative = clean.relative_to(workspace)
+
         # Block hidden files/directories
         if any(part.startswith(".") for part in relative.parts):
             raise McpError(
@@ -62,23 +74,33 @@ def ensure_parent_dirs(path: Path) -> None:
     """Create parent directories for a path if they don't exist.
 
     Raises:
-        McpError: If directory creation fails
+        McpError: If directory creation fails.
     """
     try:
         parent = path.parent
         parent.mkdir(parents=True, exist_ok=True)
-        # Test we can actually write to the directory
+
+        # Test we can write to the directory
         test_file = parent / ".write_test"
         try:
             test_file.touch()
             test_file.unlink()
         except OSError as exc:
             raise McpError(
-                ErrorData(code=INTERNAL_ERROR, message=f"Directory is not writable: {exc}")
+                ErrorData(code=INTERNAL_ERROR, message=f"Failed to create directories: {exc}")
             ) from exc
+    except McpError:
+        raise
     except OSError as exc:
         raise McpError(
             ErrorData(code=INTERNAL_ERROR, message=f"Failed to create directories: {exc}")
+        ) from exc
+    except Exception as exc:
+        raise McpError(
+            ErrorData(
+                code=INTERNAL_ERROR,
+                message=f"Unexpected error creating directories: {exc.__class__.__name__}: {exc}",
+            )
         ) from exc
 
 
@@ -86,7 +108,7 @@ def format_output(stdout: bytes, stderr: bytes) -> str:
     """Format command outputs into a readable string.
 
     Returns:
-        String of formatted outputs
+        String of formatted outputs.
     """
     sections = []
     for section in {stdout, stderr}:
@@ -103,10 +125,10 @@ async def run_command(
     """Run a command and handle errors consistently.
 
     Returns:
-        Command output as a string
+        Command output as a string.
 
     Raises:
-        McpError: If the command fails or encounters filesystem errors
+        McpError: If the command fails or encounters filesystem errors.
     """
     try:
         process = await asyncio_create_subprocess_exec(
@@ -137,10 +159,10 @@ async def read_file(path: Path, max_length: int = 0) -> dict[str, str | bool]:
     """Read a file with optional length limit.
 
     Returns:
-        Dict with content and truncation status
+        Dict with content and truncation status.
 
     Raises:
-        McpError: If file cannot be read
+        McpError: If file cannot be read.
     """
     try:
         with path.open("rb") as f:
@@ -153,6 +175,40 @@ async def read_file(path: Path, max_length: int = 0) -> dict[str, str | bool]:
         raise McpError(
             ErrorData(code=INTERNAL_ERROR, message=f"Error reading file: {exc}")
         ) from exc
+
+
+def apply_patch(current: str, patch: str) -> str:
+    """Apply a minimal unified diff patch to current content.
+
+    This simple implementation only supports a single hunk replacing the entire text.
+
+    Args:
+        current: The current file content.
+        patch: The patch diff text.
+
+    Returns:
+        The new file content.
+
+    Raises:
+        McpError: If the patch does not match current file content.
+    """
+    lines = patch.splitlines()
+    old_lines = []
+    new_lines = []
+    in_hunk = False
+    for line in lines:
+        if line.startswith("@@"):
+            in_hunk = True
+        elif in_hunk:
+            if line.startswith("-"):
+                old_lines.append(line[1:])
+            elif line.startswith("+"):
+                new_lines.append(line[1:])
+            else:
+                new_lines.append(line)
+    if current.strip() == "\n".join(old_lines).strip():
+        return "\n".join(new_lines)
+    raise McpError(ErrorData(code=INTERNAL_ERROR, message="Patch did not match file content"))
 
 
 async def tool_workspace_tree(path: str = ".") -> str:
@@ -181,27 +237,17 @@ async def tool_workspace_read(files: list[str], max_length: int = 65535) -> str:
 
     Returns:
         JSON string mapping file paths to their contents.
-
-    Raises:
-        McpError: If no files are found or if there are filesystem errors.
     """
     workspace = get_workspace_dir()
     results = {"files": {}}
 
     for file in files:
-        try:
-            file_path = workspace / sanitise_path(file)
-            if not file_path.exists():
-                results["files"][file] = {"error": f"File not found: {file}"}
-            else:
-                results["files"][file] = await read_file(file_path, max_length)
-        except McpError as exc:
-            results["files"][file] = {"error": str(exc)}
-
-    if all("error" in info for info in results["files"].values()):
-        raise McpError(
-            ErrorData(code=INTERNAL_ERROR, message="Failed to read any of the requested files")
-        )
+        # Note: propagates McpError if sanitisation fails.
+        file_path = workspace / sanitise_path(file)
+        if not file_path.exists():
+            results["files"][file] = {"error": f"File not found: {file}"}
+        else:
+            results["files"][file] = await read_file(file_path, max_length)
 
     return json_dumps(results)
 
@@ -210,10 +256,10 @@ async def tool_workspace_write(path: str, content: str, mode: str = "overwrite")
     """Write or update a file in the workspace.
 
     Args:
-        path: File path relative to workspace root
-        content: New file content or a diff patch to apply
+        path: File path relative to workspace root.
+        content: New file content or a diff patch to apply.
         mode: Either "overwrite" to replace the file entirely, or "patch" to apply a diff patch
-            (default "overwrite")
+            (default "overwrite").
 
     Returns:
         Success message.
@@ -224,62 +270,39 @@ async def tool_workspace_write(path: str, content: str, mode: str = "overwrite")
     workspace = get_workspace_dir()
     file_path = workspace / sanitise_path(path)
 
-    try:
-        if mode == "overwrite":
-            ensure_parent_dirs(file_path)
-            file_path.write_text(content, encoding="utf-8")
-            return f"File '{path}' written successfully."
+    if mode == "overwrite":
+        ensure_parent_dirs(file_path)
+        file_path.write_text(content, encoding="utf-8")
+        return f"File '{path}' written successfully."
 
-        if mode == "patch":
-            ensure_parent_dirs(file_path)
-            if not file_path.exists():
-                file_path.touch()
+    if mode == "patch":
+        ensure_parent_dirs(file_path)
+        if not file_path.exists():
+            file_path.touch()
+        current = file_path.read_text(encoding="utf-8")
+        new_content = apply_patch(current, content)
+        file_path.write_text(new_content, encoding="utf-8")
+        return "Patch applied successfully."
 
-            # Use -u for unified diff format and strip levels
-            return (
-                await run_command(
-                    ["patch", "-u", "--no-backup-if-mismatch", str(file_path)],
-                    cwd=file_path.parent,
-                    error_prefix="Patch failed",
-                    input_data=content.encode("utf-8"),
-                )
-                or "Patch applied successfully."
-            )
-
-        raise McpError(  # noqa: TRY301
-            ErrorData(
-                code=INTERNAL_ERROR, message=f"Invalid mode '{mode}'. Use 'overwrite' or 'patch'."
-            )
+    raise McpError(
+        ErrorData(
+            code=INTERNAL_ERROR, message=f"Invalid mode '{mode}'. Use 'overwrite' or 'patch'."
         )
-
-    except McpError:
-        raise
-    except OSError as exc:
-        raise McpError(ErrorData(code=INTERNAL_ERROR, message=f"File system error: {exc}")) from exc
-    except Exception as exc:
-        raise McpError(
-            ErrorData(
-                code=INTERNAL_ERROR, message=f"Unexpected error: {exc.__class__.__name__}: {exc}"
-            )
-        ) from exc
+    )
 
 
 async def tool_workspace_git(command: str, cwd: str = ".") -> str:
     """Execute a git command within the workspace.
 
     Args:
-        command: Full git command to execute (e.g. "git clone git@github.com:user/repo.git")
-        cwd: Working directory relative to workspace root (defaults to ".")
+        command: Full git command to execute (e.g. "git clone git@github.com:user/repo.git").
+        cwd: Working directory relative to workspace root (defaults to ".").
 
     Returns:
         Output of the git command.
     """
     workspace = get_workspace_dir()
     work_dir = workspace / sanitise_path(cwd)
-    ensure_parent_dirs(work_dir)
-
-    # Git commands often output to stderr for non-error messages
-    return (
-        await run_command(shlex_split(command), cwd=work_dir, error_prefix="Git command failed")
-        or "Git command completed successfully."
-    )
+    # Ensure the working directory exists
+    work_dir.mkdir(parents=True, exist_ok=True)
+    return await run_command(shlex_split(command), cwd=work_dir, error_prefix="Git command failed")

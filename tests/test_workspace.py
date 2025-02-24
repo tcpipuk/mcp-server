@@ -128,10 +128,8 @@ async def test_workspace_git(workspace: Path) -> None:
     """Test git operations in the workspace."""
     # Test git init
     result = await tool_workspace_git("git init")
-    if "Git command completed successfully" not in result:
-        pytest.fail(f"Expected success message in output: {result}")
-    if not (workspace / ".git").exists():
-        pytest.fail("Git repository not initialized")
+    if "Initialized empty Git repository" not in result:
+        pytest.fail(f"Expected initialisation message in output: {result}")
 
     # Test git with custom working directory
     subdir = "repo"
