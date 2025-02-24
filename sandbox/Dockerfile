@@ -1,5 +1,5 @@
 FROM ghcr.io/astral-sh/uv:python3.13-bookworm-slim
-WORKDIR /opt
+WORKDIR /tmp
 
 # Configure shell to exit on any error, including pipe failures
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
@@ -22,7 +22,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 ENV UV_COMPILE_BYTECODE=1 \
   UV_LINK_MODE=copy \
   UV_NO_CACHE=1 \
-  UV_PROJECT_ENVIRONMENT=venv
+  UV_PROJECT_ENVIRONMENT=/usr/local
 
 COPY --chown=sandbox:sandbox pyproject.toml uv.lock ./
 RUN --mount=type=cache,target=/root/.cache/uv \
