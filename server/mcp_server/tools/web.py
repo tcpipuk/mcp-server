@@ -1,7 +1,16 @@
 """Provide tools to retrieve and process web content.
 
-Defines classes and functions to fetch web content and process it in various modes:
-markdown, raw text, or link extraction.
+Helps AI assistants access and understand web content through three processing modes:
+
+- markdown: Converts HTML to clean, readable markdown (default)
+- links: Extracts and formats hyperlinks with their anchor text
+- raw: Returns unprocessed content for APIs or non-HTML resources
+
+Features include:
+- Smart content extraction focusing on main text
+- Link processing with relative URL resolution
+- Configurable length limits
+- Detailed error messages for common issues
 """
 
 from __future__ import annotations

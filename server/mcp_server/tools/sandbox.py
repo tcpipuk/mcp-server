@@ -1,8 +1,15 @@
 """Provide tools to execute shell commands in a persistent sandbox environment.
 
-Uses socat to connect to a bash process over a TCP connection defined by the SANDBOX_HOST
-environment variable, with support for running commands in screen sessions that persist between
-requests.
+Offers a secure environment for running Python code and shell commands with:
+
+- Python 3.13 with pandas/numpy for data analysis
+- Network tools (aiodns, aiohttp, beautifulsoup4, requests) for web tasks
+- Development tools (git, ruff) for managing and checking code
+- System tools (curl, dig, host, ping, screen, tree, wget) for investigation
+
+Uses socat to connect to a bash process over a TCP connection defined by the SANDBOX
+environment variable. Supports screen sessions that persist between requests for
+long-running tasks.
 """
 
 from __future__ import annotations
@@ -69,13 +76,11 @@ class ShellConnection:
             ShellConnection instance
 
         Raises:
-            McpError: If SANDBOX_HOST is not set or malformed
+            McpError: If SANDBOX is not set or malformed
         """
-        if not (sandbox := os_environ.get("SANDBOX_HOST")):
+        if not (sandbox := os_environ.get("SANDBOX")):
             raise McpError(
-                ErrorData(
-                    code=INTERNAL_ERROR, message="SANDBOX_HOST environment variable is not set"
-                )
+                ErrorData(code=INTERNAL_ERROR, message="SANDBOX environment variable is not set")
             )
 
         try:

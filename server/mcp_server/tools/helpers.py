@@ -1,6 +1,13 @@
 """Helper functions for the MCP fetch server tools.
 
-Provides common utilities for fetching and processing web content.
+Provides shared utilities for error handling and web content retrieval:
+
+- Error formatting: Consistent XML-style error messages for AI parsing
+- HTTP client: Robust web content fetching with configurable User-Agent
+- Error handling: Detailed error messages for common network issues
+
+All functions handle errors gracefully and provide clear feedback to help
+AI assistants understand and resolve issues independently.
 """
 
 from __future__ import annotations
