@@ -1,8 +1,8 @@
 # MCP Server
 
-A server that lets AI assistants like Claude safely use external tools - like running Python code or
-accessing websites. It processes data to make it easier for AI to understand, and provides helpful
-error messages when things go wrong, so bots are more empowered to solve their own problems.
+Give your AI assistants the power to help you more effectively. This server lets them safely run
+code, access websites, and process data - with clear feedback about what's happening and helpful
+error messages when things go wrong.
 
 1. [🛠️ What tools does this server offer?](#️-what-tools-does-this-server-offer)
 2. [🏎️ How can I run it?](#️-how-can-i-run-it)
@@ -14,16 +14,18 @@ error messages when things go wrong, so bots are more empowered to solve their o
 
 ## 🛠️ What tools does this server offer?
 
-Once running, your AI assistant will be able to:
+The server provides two powerful tools that help AI assistants solve real-world problems:
 
 | Tool | What it can do |
 |------|-------------|
-| [Python](docs/python.md)| Run Python code safely in a sandbox. Includes popular packages like numpy and pandas for data analysis, and can either run code or check it for errors. |
+| [Sandbox](docs/sandbox.md) | Run code and commands in a separate sandbox Docker container. Includes Python 3.13 with data analysis packages, development tools like git and ruff, and system utilities for investigation and testing. |
 | [Web](docs/web.md) | Access websites and process their content. Can convert pages to markdown for easy reading, get the raw content, or extract links to help navigate through documentation. |
 
 ## 🏎️ How can I run it?
 
 ### 🐋 Using Docker (recommended)
+
+The server runs in Docker containers to keep things safe and simple. Here's how to get started:
 
 1. [Install Docker](https://docs.docker.com/engine/install/) if you haven't already
 2. Create a file called `docker-compose.yml` with:
@@ -48,22 +50,22 @@ Once running, your AI assistant will be able to:
        stop_grace_period: 1s
    ```
 
+   > **Note**: Setting `SSE_HOST` and `SSE_PORT` enables network mode (SSE), which is what you
+   > want for LibreChat. The server automatically detects this and configures itself appropriately.
+
 3. Run `docker compose up` to start both containers
 
-The setup uses two containers:
+The setup uses two containers to balance power with safety:
 
-- The main server container handles connections and coordinates tools
-- A sandbox container provides a clean, isolated environment for running commands safely
-
-> **Note**: The server will automatically use network mode (SSE) when you set `SSE_HOST` and
-> `SSE_PORT`. This is what you want for using it with LibreChat.
+- The main server handles connections and coordinates tools
+- A separate sandbox provides an isolated environment for running commands
 
 Most people use this with either:
 
 - [Claude Desktop](https://modelcontextprotocol.io/quickstart/user) - connects directly to your computer
 - [LibreChat](https://www.librechat.ai/docs/local) - connects over the network
 
-For LibreChat, add this to your `librechat.yaml` to connect:
+For LibreChat, add this to your `librechat.yaml`:
 
 ```yaml:librechat.yaml
 mcpServers:
@@ -110,6 +112,7 @@ mcpServers:
 
 Available arguments:
 
+- `--sandbox`: Sandbox listening address (e.g. `127.0.0.1:8080`)
 - `--sse-host`: SSE listening address (e.g. `0.0.0.0`)
 - `--sse-port`: SSE listening port (e.g. `3001`)
 - `--user-agent`: Custom User-Agent string for HTTP requests
