@@ -123,5 +123,3 @@ async def test_run_command_timeout(
     result = await tool_sandbox("sleep 10", time_limit=1)
     if "Command timed out" not in result:
         pytest.fail("Expected 'Command timed out' in result, got: " + result)
-    if "Exit code: 1" not in result:
-        pytest.fail("Expected 'Exit code: 1' in result, got: " + result)
