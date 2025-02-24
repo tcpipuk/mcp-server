@@ -1,24 +1,5 @@
-################################
-# Build stage - Dependencies
-################################
-FROM ghcr.io/astral-sh/uv:python3.13-bookworm-slim AS uv
+FROM ghcr.io/astral-sh/uv:python3.13-bookworm-slim
 WORKDIR /opt
-
-# Configure uv behaviour
-ENV UV_COMPILE_BYTECODE=1 \
-  UV_LINK_MODE=copy \
-  UV_PYTHON_PREFERENCE=only-managed
-
-# Install Python dependencies
-# Uses build cache for faster subsequent builds
-COPY pyproject.toml uv.lock ./
-RUN --mount=type=cache,target=/root/.cache/uv \
-  uv sync --frozen ${BUILD_ENV:+"--dev"} --no-editable
-
-################################
-# Runtime stage
-################################
-FROM debian:bookworm-slim
 
 # Configure shell to exit on any error, including pipe failures
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
@@ -37,8 +18,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   && mkdir -p -m 750 /workspace \
   && chown sandbox:sandbox /workspace
 
-# Copy Python virtual environment from build stage
-COPY --from=uv --chown=sandbox:sandbox /opt/.venv /opt/venv
+# Configure uv behaviour and install dependencies
+ENV UV_COMPILE_BYTECODE=1 \
+  UV_LINK_MODE=copy \
+  UV_NO_CACHE=1 \
+  UV_PROJECT_ENVIRONMENT=venv
+
+COPY --chown=sandbox:sandbox pyproject.toml uv.lock ./
+RUN --mount=type=cache,target=/root/.cache/uv \
+  uv sync --frozen ${BUILD_ENV:+"--dev"} --no-editable
 
 # Copy entrypoint script
 COPY --chmod=755 --chown=0:0 entrypoint.sh /
