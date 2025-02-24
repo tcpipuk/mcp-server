@@ -39,9 +39,11 @@ jobs:
         run: |
           set -o pipefail
           docker run --rm -e BUILD_ENV=dev mcp-server:test | tee pytest_output.txt
-          echo '```' >> $GITHUB_STEP_SUMMARY
-          cat pytest_output.txt >> $GITHUB_STEP_SUMMARY
-          echo '```' >> $GITHUB_STEP_SUMMARY
+          exit_code=${PIPESTATUS[0]}
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          cat pytest_output.txt >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          exit $exit_code
 
   build:
     name: Docker build
