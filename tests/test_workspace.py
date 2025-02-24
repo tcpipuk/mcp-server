@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from json import loads as json_loads
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -40,15 +41,27 @@ async def test_workspace_tree(workspace: Path) -> None:
     (workspace / "subdir" / "file.txt").touch()
 
     # Test basic tree listing
-    result = await tool_workspace_tree()
-    if '"name": "test.txt"' not in result or '"name": "file.txt"' not in result:
+    result = json_loads(await tool_workspace_tree())
+    files = {
+        item["name"]
+        for directory in result
+        if isinstance(directory, dict) and directory.get("type") == "directory"
+        for item in directory.get("contents", [])
+    }
+    if not {"test.txt", "subdir"} <= files:
         pytest.fail(f"Expected files missing from tree output: {result}")
 
     # Test subdirectory listing
-    result = await tool_workspace_tree("subdir")
-    if '"name": "test.txt"' in result:
+    result = json_loads(await tool_workspace_tree("subdir"))
+    files = {
+        item["name"]
+        for directory in result
+        if isinstance(directory, dict) and directory.get("type") == "directory"
+        for item in directory.get("contents", [])
+    }
+    if "test.txt" in files:
         pytest.fail(f"Found root file in subdirectory listing: {result}")
-    if '"name": "file.txt"' not in result:
+    if "file.txt" not in files:
         pytest.fail(f"Subdirectory file missing from tree output: {result}")
 
 

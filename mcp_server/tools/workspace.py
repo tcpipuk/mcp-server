@@ -34,29 +34,28 @@ def sanitise_path(path: str | Path) -> Path:
     Raises:
         McpError: If path would escape workspace
     """
-    # Convert to Path and normalise
-    clean = Path(path).parts
-
-    # Handle empty paths (e.g. "." or "")
-    if not clean:
-        return Path()
-
-    # Block absolute paths and parent directory traversal
-    if clean[0] == "/" or ".." in clean:
-        raise McpError(
-            ErrorData(
-                code=INTERNAL_ERROR, message="Path cannot be absolute or contain parent traversal"
+    try:
+        # Convert to Path and resolve against workspace
+        workspace = get_workspace_dir()
+        clean = (workspace / Path(path)).resolve()
+        # Ensure path is within workspace
+        if not clean.is_relative_to(workspace):
+            raise McpError(ErrorData(code=INTERNAL_ERROR, message="Path escapes workspace"))
+        # Get relative path from workspace
+        relative = clean.relative_to(workspace)
+        # Block hidden files/directories
+        if any(part.startswith(".") for part in relative.parts):
+            raise McpError(
+                ErrorData(
+                    code=INTERNAL_ERROR, message="Path cannot contain hidden/special components"
+                )
             )
-        )
-
-    # Ensure no parts start with dots/hidden
-    if any(part.startswith(".") for part in clean):
+    except (ValueError, RuntimeError) as exc:
         raise McpError(
-            ErrorData(code=INTERNAL_ERROR, message="Path cannot contain hidden/special components")
-        )
-
-    # Join parts to create clean relative path
-    return Path(*clean)
+            ErrorData(code=INTERNAL_ERROR, message="Path cannot escape workspace root")
+        ) from exc
+    else:
+        return relative
 
 
 def ensure_parent_dirs(path: Path) -> None:
@@ -70,8 +69,13 @@ def ensure_parent_dirs(path: Path) -> None:
         parent.mkdir(parents=True, exist_ok=True)
         # Test we can actually write to the directory
         test_file = parent / ".write_test"
-        test_file.touch()
-        test_file.unlink()
+        try:
+            test_file.touch()
+            test_file.unlink()
+        except OSError as exc:
+            raise McpError(
+                ErrorData(code=INTERNAL_ERROR, message=f"Directory is not writable: {exc}")
+            ) from exc
     except OSError as exc:
         raise McpError(
             ErrorData(code=INTERNAL_ERROR, message=f"Failed to create directories: {exc}")
@@ -99,7 +103,7 @@ async def run_command(
     """Run a command and handle errors consistently.
 
     Returns:
-        Tuple of (stdout string, stderr string)
+        Command output as a string
 
     Raises:
         McpError: If the command fails or encounters filesystem errors
@@ -184,25 +188,22 @@ async def tool_workspace_read(files: list[str], max_length: int = 65535) -> str:
     workspace = get_workspace_dir()
     results = {"files": {}}
 
-    try:
-        for file in files:
-            try:
-                file_path = workspace / sanitise_path(file)
-                if not file_path.exists():
-                    results["files"][file] = {"error": f"File not found: {file}"}
-                else:
-                    results["files"][file] = await read_file(file_path, max_length)
-            except McpError as exc:
-                results["files"][file] = {"error": str(exc)}
+    for file in files:
+        try:
+            file_path = workspace / sanitise_path(file)
+            if not file_path.exists():
+                results["files"][file] = {"error": f"File not found: {file}"}
+            else:
+                results["files"][file] = await read_file(file_path, max_length)
+        except McpError as exc:
+            results["files"][file] = {"error": str(exc)}
 
-        return json_dumps(results)
-
-    except Exception as exc:
+    if all("error" in info for info in results["files"].values()):
         raise McpError(
-            ErrorData(
-                code=INTERNAL_ERROR, message=f"Unexpected error: {exc.__class__.__name__}: {exc}"
-            )
-        ) from exc
+            ErrorData(code=INTERNAL_ERROR, message="Failed to read any of the requested files")
+        )
+
+    return json_dumps(results)
 
 
 async def tool_workspace_write(path: str, content: str, mode: str = "overwrite") -> str:
@@ -234,9 +235,10 @@ async def tool_workspace_write(path: str, content: str, mode: str = "overwrite")
             if not file_path.exists():
                 file_path.touch()
 
+            # Use -u for unified diff format and strip levels
             return (
                 await run_command(
-                    ["patch", "-p0", str(file_path)],
+                    ["patch", "-u", "--no-backup-if-mismatch", str(file_path)],
                     cwd=file_path.parent,
                     error_prefix="Patch failed",
                     input_data=content.encode("utf-8"),
@@ -276,6 +278,7 @@ async def tool_workspace_git(command: str, cwd: str = ".") -> str:
     work_dir = workspace / sanitise_path(cwd)
     ensure_parent_dirs(work_dir)
 
+    # Git commands often output to stderr for non-error messages
     return (
         await run_command(shlex_split(command), cwd=work_dir, error_prefix="Git command failed")
         or "Git command completed successfully."
