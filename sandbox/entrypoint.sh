@@ -4,7 +4,6 @@ set -e
 # Shell wrapper to execute for each connection
 cat >/tmp/shell_wrapper.sh <<'EOF'
 #!/bin/bash
-source /opt/venv/bin/activate
 PS1="(sandbox) \u@\h:\w\$ "
 exec bash --login
 EOF
