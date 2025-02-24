@@ -22,10 +22,8 @@ WORKDIR /app
 ARG BUILD_ENV=prod
 
 # Install minimal system dependencies, create user, and ensure /workspace is writable
-RUN apt-get update && apt-get install -y --no-install-recommends \
-  git \
-  openssh-client \
-  tree \
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends socat \
   && rm -rf /var/lib/apt/lists/* \
   && groupadd -r app \
   && useradd -r -g app app \
@@ -44,4 +42,4 @@ ENV PATH="/app/.venv/bin:/app/sandbox-venv/bin:$PATH" \
   RUFF_CACHE_DIR=/tmp/.ruff_cache
 
 # Use wrapper script to handle startup
-ENTRYPOINT ["/app/docker-entrypoint.sh"]
+ENTRYPOINT ["/app/entrypoint.sh"]
