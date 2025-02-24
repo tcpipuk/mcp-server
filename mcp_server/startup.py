@@ -5,9 +5,10 @@ Sets up Git configuration and SSH keys safely before any tools are available.
 
 from __future__ import annotations
 
-import os
-import re
+from logging import getLogger
+from os import environ as os_environ
 from pathlib import Path
+from re import MULTILINE, compile as re_compile
 from shutil import which
 from subprocess import CalledProcessError, run as subprocess_run  # noqa: S404
 from tempfile import NamedTemporaryFile
@@ -15,17 +16,20 @@ from tempfile import NamedTemporaryFile
 from mcp.shared.exceptions import McpError
 from mcp.types import INTERNAL_ERROR, ErrorData
 
+# Get logger for this module
+logger = getLogger(__name__)
+
 # SSH agent exit codes
 SSH_AGENT_NOT_RUNNING = 2
 
 # Validation patterns
-GIT_NAME_PATTERN = re.compile(r"^[a-zA-Z0-9\s._-]+$")
-GIT_EMAIL_PATTERN = re.compile(r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$")
-SSH_KEY_PATTERN = re.compile(
+GIT_NAME_PATTERN = re_compile(r"^[a-zA-Z0-9\s._-]+$")
+GIT_EMAIL_PATTERN = re_compile(r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$")
+SSH_KEY_PATTERN = re_compile(
     r"^-----BEGIN [A-Z\s]+ PRIVATE KEY-----[\r\n]+"
     r"[A-Za-z0-9+/=\s]+[\r\n]+"
     r"-----END [A-Z\s]+ PRIVATE KEY-----[\r\n]*$",
-    re.MULTILINE,
+    MULTILINE,
 )
 
 
@@ -81,13 +85,13 @@ def _validate_ssh_key(key: str) -> None:
         McpError: If key format is invalid
     """
     # Normalize line endings and remove any double newlines
-    normalized_key = "\n".join(line.strip() for line in key.splitlines())
+    normalised_key = "\n".join(line.strip() for line in key.splitlines())
 
     # Add final newline if missing
-    if not normalized_key.endswith("\n"):
-        normalized_key += "\n"
+    if not normalised_key.endswith("\n"):
+        normalised_key += "\n"
 
-    if not SSH_KEY_PATTERN.match(normalized_key):
+    if not SSH_KEY_PATTERN.match(normalised_key):
         raise McpError(
             ErrorData(
                 code=INTERNAL_ERROR,
@@ -102,8 +106,8 @@ def setup_git_config() -> None:
     Raises:
         McpError: If git configuration fails
     """
-    git_name = os.environ.get("GIT_USER_NAME")
-    git_email = os.environ.get("GIT_USER_EMAIL")
+    git_name = os_environ.get("GIT_USER_NAME")
+    git_email = os_environ.get("GIT_USER_EMAIL")
     git_path = _get_command_path("git")
 
     try:
@@ -137,15 +141,25 @@ def setup_git_config() -> None:
 def setup_ssh_agent() -> None:
     """Start SSH agent if not running and add provided key.
 
-    Raises:
-        McpError: If SSH key setup fails
+    If the SSH key is invalid or setup fails, logs a warning but continues.
     """
-    ssh_key = os.environ.get("GIT_SSH_KEY")
+    ssh_key = os_environ.get("GIT_SSH_KEY")
     if not ssh_key:
         return
 
     try:
-        _validate_ssh_key(ssh_key)
+        # Validate key format
+        try:
+            normalised_key = "\n".join(line.strip() for line in ssh_key.splitlines())
+            if not normalised_key.endswith("\n"):
+                normalised_key += "\n"
+            if not SSH_KEY_PATTERN.match(normalised_key):
+                logger.warning("Invalid SSH key format - SSH authentication will be unavailable")
+                return
+        except Exception as exc:
+            logger.warning("Failed to validate SSH key: %s", exc)
+            return
+
         ssh_add_path = _get_command_path("ssh-add")
         ssh_agent_path = _get_command_path("ssh-agent")
 
@@ -166,7 +180,7 @@ def setup_ssh_agent() -> None:
                     key, value = line.split("=", 1)
                     key = key.strip().upper()
                     value = value.rstrip(";").strip('"')
-                    os.environ[key] = value
+                    os_environ[key] = value
 
         # Write key to temporary file
         with NamedTemporaryFile(mode="w", encoding="utf-8", delete=False) as temp:
@@ -184,12 +198,11 @@ def setup_ssh_agent() -> None:
             key_path.unlink()
 
         # Remove key from environment
-        del os.environ["GIT_SSH_KEY"]
+        del os_environ["GIT_SSH_KEY"]
 
     except (CalledProcessError, OSError) as exc:
-        raise McpError(
-            ErrorData(code=INTERNAL_ERROR, message=f"Failed to setup SSH key: {exc}")
-        ) from exc
+        logger.warning("Failed to setup SSH agent: %s", exc)
+        return
 
 
 def secure_startup() -> None:
@@ -197,5 +210,10 @@ def secure_startup() -> None:
 
     This must be called before any tools are made available.
     """
-    setup_git_config()
+    try:
+        setup_git_config()
+    except McpError as exc:
+        logger.warning("Failed to configure git: %s", exc)
+
+    # SSH setup already handles its own errors
     setup_ssh_agent()
