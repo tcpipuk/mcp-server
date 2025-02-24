@@ -11,7 +11,7 @@ COPY pyproject.toml uv.lock ./
 RUN --mount=type=cache,target=/root/.cache/uv \
   uv sync --frozen --no-install-project ${BUILD_ENV:+"--dev"} --no-editable
 
-# Add the source code and install dependencies
+# Add the source code and install main project dependencies
 COPY . .
 RUN --mount=type=cache,target=/root/.cache/uv \
   uv sync --frozen ${BUILD_ENV:+"--dev"} --no-editable
@@ -43,7 +43,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   && mkdir -p /workspace \
   && chown app:app /workspace \
   && mkdir -p -m 700 ~/.ssh \
-  && chown app:app ~/.ssh
+  && chown app:app ~/.ssh \
+  && mkdir -p /home/app/.config/git \
+  && chown -R app:app /home/app/.config
 
 # Copy only necessary files from build stage
 COPY --from=uv --chown=app:app /app/ .

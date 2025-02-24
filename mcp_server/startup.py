@@ -92,17 +92,21 @@ def setup_git_config() -> None:
     git_path = _get_command_path("git")
 
     try:
+        # Ensure config directory exists
+        config_dir = Path.home() / ".config" / "git"
+        config_dir.mkdir(parents=True, exist_ok=True)
+
         if git_name:
             _validate_git_name(git_name)
             subprocess_run(  # noqa: S603
-                [git_path, "config", "--global", "user.name", git_name],
+                [git_path, "config", "--file", str(config_dir / "config"), "user.name", git_name],
                 check=True,
                 capture_output=True,
             )
         if git_email:
             _validate_git_email(git_email)
             subprocess_run(  # noqa: S603
-                [git_path, "config", "--global", "user.email", git_email],
+                [git_path, "config", "--file", str(config_dir / "config"), "user.email", git_email],
                 check=True,
                 capture_output=True,
             )
