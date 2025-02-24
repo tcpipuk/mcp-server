@@ -38,26 +38,19 @@ SCREEN_ID_LENGTH: Final[int] = 8
 @dataclass(frozen=True, slots=True)
 class CommandResult:
     """Hold the result of a command execution."""
-
     stdout: str = field(default="")
     stderr: str = field(default="")
-    exit_code: int = field(default=0)
 
     @property
     def formatted_output(self) -> str:
-        """Format the command result for display.
-
-        Returns:
-            Formatted string containing exit code, stdout, and stderr if present
-        """
-        sections = [f"Exit code: {self.exit_code}"]
-
-        if stdout := self.stdout.strip():
-            sections.append(f"Output:\n```\n{stdout}\n```")
+        """Format the command result for display."""
         if stderr := self.stderr.strip():
-            sections.append(f"Error:\n```\n{stderr}\n```")
-
-        return "\n\n".join(sections)
+            return f"Error:\n```\n{stderr}\n```"
+        
+        if stdout := self.stdout.strip():
+            return f"Output:\n```\n{stdout}\n```"
+        
+        return "No output"
 
 
 @dataclass(slots=True)
@@ -106,22 +99,23 @@ class ShellConnection:
             time_limit: Seconds to wait for output
 
         Returns:
-            CommandResult containing stdout, stderr, and exit code
+            CommandResult containing stdout
         """
         try:
+            # Wait for initial prompt
+            await asyncio_wait_for(self._read_until_prompt(), timeout=1)
+
+            # Send the command block
             await self._write_command(command)
+            
+            # Read all output until next prompt
             output = await asyncio_wait_for(self._read_until_prompt(), timeout=time_limit)
-
-            # Check exit code after command execution
-            await self._write_command("echo $?")
-            exit_code_str = (await asyncio_wait_for(self._read_until_prompt(), timeout=1)).strip()
-            exit_code = int(exit_code_str) if exit_code_str.isdigit() else 1
-
-            return CommandResult(stdout=output, exit_code=exit_code)
+            
+            return CommandResult(stdout=output)
         except TimeoutError:
-            return CommandResult(stderr="Command timed out", exit_code=1)
+            return CommandResult(stderr="Command timed out")
         except Exception as e:
-            return CommandResult(stderr=str(e), exit_code=1)
+            return CommandResult(stderr=str(e))
 
     async def _write_command(self, command: str) -> None:
         """Write a command to the shell and drain the buffer.
@@ -152,12 +146,15 @@ async def tool_sandbox(commands: str, time_limit: int = DEFAULT_TIMEOUT) -> str:
     """Execute shell commands in the sandbox environment.
 
     Args:
-        command: Shell command(s) to execute
+        commands: Shell command(s) to execute
         time_limit: Seconds to wait for output
 
     Returns:
         Command output formatted as a string
     """
     conn = await ShellConnection.connect()
-    result = await conn.run_command(commands, time_limit)
-    return result.formatted_output
+    try:
+        result = await conn.run_command(commands, time_limit)
+        return result.formatted_output
+    finally:
+        await conn.close()
