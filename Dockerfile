@@ -13,7 +13,7 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 
 # Create sandbox venv and install its dependencies
 RUN --mount=type=cache,target=/root/.cache/uv \
-  uv venv --path /app/sandbox-venv && \
+  uv venv /app/sandbox-venv && \
   /app/sandbox-venv/bin/uv pip install \
   aiodns \
   aiohttp \
