@@ -14,7 +14,14 @@ from pathlib import Path
 from yaml import safe_load as yaml_safe_load
 
 from .server import MCPServer
-from .tools import tool_python, tool_web
+from .tools import (
+    tool_python,
+    tool_web,
+    tool_workspace_git,
+    tool_workspace_read,
+    tool_workspace_tree,
+    tool_workspace_write,
+)
 
 
 def main() -> None:
@@ -35,6 +42,10 @@ def main() -> None:
     config = yaml_safe_load(Path("tools.yaml").read_text(encoding="utf-8"))
     config["tools"]["python"]["method"] = tool_python
     config["tools"]["web"]["method"] = tool_web
+    config["tools"]["workspace_git"]["method"] = tool_workspace_git
+    config["tools"]["workspace_read"]["method"] = tool_workspace_read
+    config["tools"]["workspace_tree"]["method"] = tool_workspace_tree
+    config["tools"]["workspace_write"]["method"] = tool_workspace_write
     server = MCPServer(config)
     with contextlib_suppress(KeyboardInterrupt, CancelledError):
         asyncio_run(server.serve())
