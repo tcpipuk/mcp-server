@@ -6,9 +6,9 @@ concurrency:
 on:
   pull_request:
   push:
-    paths-ignore:
-      - "**/*.md"
-      - "docs/**"
+    paths:
+      - "server/**"
+      - ".github/workflows/build-server.yml"
   workflow_dispatch:
 
 jobs:
@@ -28,7 +28,7 @@ jobs:
           DOCKER_BUILD_SUMMARY: false
           DOCKER_BUILD_RECORD_UPLOAD: false
         with:
-          context: .
+          context: server
           load: true
           build-args: BUILD_ENV=dev
           tags: mcp-server:test
@@ -62,7 +62,7 @@ jobs:
         with:
           context: workflow
           images: |
-            name=ghcr.io/${{ github.repository }}
+            name=ghcr.io/${{ github.repository }}/mcp-server
           tags: |
             type=raw,value=latest,enable={{is_default_branch}}
             type=ref,event=branch
@@ -83,7 +83,7 @@ jobs:
         env:
           DOCKER_BUILD_RECORD_UPLOAD: false
         with:
-          context: .
+          context: server
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
