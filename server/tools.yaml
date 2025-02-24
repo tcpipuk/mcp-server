@@ -24,7 +24,7 @@ tools:
     inputSchema:
       type: object
       properties:
-        command:
+        commands:
           type: string
           description: >
             Commands to run. Multi-line input runs as given.
@@ -42,13 +42,13 @@ tools:
             - Keep notes in /workspace/notes
             - Clean old files/screens
             - Use clear screen names
-        timeout:
+        time_limit:
           type: integer
           default: 5
           description: >
             Secs to wait for output. Keep short (2-5s) and split big jobs into
             small steps for better feedback, as tool waits full time.
-      required: ["command"]
+      required: ["commands"]
 
   web:
     description: >
