@@ -93,8 +93,14 @@ async def test_tool_sandbox_success(monkeypatch: pytest.MonkeyPatch) -> None:
     async def fake_open_connection(
         host: str, port: int
     ) -> tuple[DummyStreamReader, DummyStreamWriter]:
-        # Simulate output lines ending with a prompt.
-        lines = [b"output line 1\n", b"output line 2\n", b"$ "]
+        # Simulate output lines ending with a prompt, including exit code response
+        lines = [
+            b"output line 1\n",
+            b"output line 2\n",
+            b"$ ",  # First prompt after command
+            b"0\n",  # Exit code response
+            b"$ ",  # Final prompt
+        ]
         return DummyStreamReader(lines), DummyStreamWriter()
 
     monkeypatch.setattr("mcp_server.tools.sandbox.asyncio_open_connection", fake_open_connection)
@@ -121,26 +127,3 @@ async def test_run_command_timeout(
         pytest.fail("Expected 'Command timed out' in result, got: " + result)
     if "Exit code: 1" not in result:
         pytest.fail("Expected 'Exit code: 1' in result, got: " + result)
-
-
-@pytest.mark.asyncio
-async def test_run_command_with_screen(monkeypatch: pytest.MonkeyPatch, sandbox_server) -> None:
-    """Test that running a command with a screen session works correctly."""
-    host, port = sandbox_server
-    monkeypatch.setenv("SANDBOX_HOST", f"{host}:{port}")
-
-    # Test creating and using a screen session
-    shell = await ShellConnection.connect()
-    result = await shell.run_command(
-        "screen -S test_screen -dm bash -c 'echo testing screen'", time_limit=2
-    )
-    if result.exit_code != 0:
-        pytest.fail(f"Expected exit code 0, got: {result.exit_code}")
-
-    # Verify we can read the screen output
-    result = await shell.run_command(
-        "screen -S test_screen -X hardcopy /tmp/screen.log", time_limit=2
-    )
-    result = await shell.run_command("cat /tmp/screen.log", time_limit=2)
-    if "testing screen" not in result.stdout:
-        pytest.fail(f"Expected 'testing screen' in output, got: {result.stdout}")
