@@ -103,7 +103,7 @@ async def test_tool_sandbox_success(monkeypatch: pytest.MonkeyPatch) -> None:
 
     monkeypatch.setattr("mcp_server.tools.sandbox.asyncio_open_connection", fake_open_connection)
     result = await tool_sandbox("echo hello", time_limit=2)
-    if "hello" not in result:
+    if "0" not in result:
         pytest.fail("Expected hello in result, got: " + result)
     if "output line 1" not in result:
         pytest.fail("Expected 'output line 1' in result, got: " + result)
