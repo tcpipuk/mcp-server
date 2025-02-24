@@ -11,11 +11,6 @@ COPY pyproject.toml uv.lock ./
 RUN --mount=type=cache,target=/root/.cache/uv \
   uv sync --frozen --no-install-project ${BUILD_ENV:+"--dev"} --no-editable
 
-# Add the rest of the project source code and install it
-COPY . .
-RUN --mount=type=cache,target=/root/.cache/uv \
-  uv sync --frozen ${BUILD_ENV:+"--dev"} --no-editable
-
 # Add the source code and install dependencies
 COPY . .
 RUN --mount=type=cache,target=/root/.cache/uv \
@@ -26,16 +21,13 @@ FROM python:3.13-slim-bookworm AS runtime
 WORKDIR /app
 ARG BUILD_ENV=prod
 
-# Install system dependencies, missing commands, create user, and ensure /workspace is writable.
+# Install system dependencies, missing commands, create user, and ensure /workspace is writable
 RUN apt-get update && apt-get install -y --no-install-recommends \
   build-essential \
   git \
+  openssh-client \
   tree \
   && rm -rf /var/lib/apt/lists/* \
-  && groupadd -r app \
-  && useradd -r -g app app \
-  && mkdir -p /workspace \
-  && chown app:app /workspace \
   && python -m venv /app/sandbox-venv \
   && /app/sandbox-venv/bin/pip install --no-cache-dir \
   aiodns \
@@ -45,7 +37,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   numpy \
   pandas \
   requests \
-  && rm -rf /root/.cache
+  && rm -rf /root/.cache \
+  && groupadd -r app \
+  && useradd -r -g app app \
+  && mkdir -p /workspace \
+  && chown app:app /workspace \
+  && mkdir -p -m 700 ~/.ssh \
+  && chown app:app ~/.ssh \
+  && chmod +x /app/docker-entrypoint.sh
 
 # Copy only necessary files from build stage
 COPY --from=uv --chown=app:app /app/ .
@@ -58,5 +57,5 @@ ENV PATH="/app/.venv/bin:/app/sandbox-venv/bin:$PATH" \
   SANDBOX_PYTHON="/app/sandbox-venv/bin/python" \
   SANDBOX_RUFF="/app/sandbox-venv/bin/ruff"
 
-# Use conditional entrypoint
-ENTRYPOINT ["/bin/sh", "-c", "if [ \"$BUILD_ENV\" = \"dev\" ]; then pytest -v --log-cli-level=INFO tests/; else exec mcp-server; fi"]
+# Use wrapper script to handle startup
+ENTRYPOINT ["/app/docker-entrypoint.sh"]
