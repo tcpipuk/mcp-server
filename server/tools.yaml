@@ -1,62 +1,59 @@
 tools:
   sandbox:
     description: >
-      Access a bash shell in a persistent sandbox environment that lets you help the user
-      by running commands, writing code, and managing files. Everything persists between
-      commands in /workspace, so you can build up complex solutions over multiple steps.
+      A persistent bash env that helps you do real work instead of guessing.
+      Use this to get exact answers, run actual checks, and build working
+      solutions instead of just describing them.
 
-      Core capabilities:
-      - Python 3.13 with pandas/numpy for data analysis and calculations
-      - Network tools (aiodns, aiohttp, beautifulsoup4, requests) for targeted web tasks
-      - Development tools (git, ruff) for managing and checking code
-      - System tools (curl, dig, host, ping, screen, tree, wget) for investigation
+      The sandbox has:
+      - Python 3.13 + pandas/numpy for exact data work and fast math
+      - Dev tools (git, ruff) to check and fix code
+      - Net tools (curl, dig, requests, bs4) to debug issues
+      - System utils (ping, screen, tree) to explore and run tasks
+      - Persistent /workspace dir to build complex solutions
 
-      When to use this tool:
-      - Running Python code to demonstrate concepts or calculate results
-      - Investigating network/system issues that need multiple commands
-      - Building up complex solutions that need persistent storage
-      - Testing and improving code quality with linting/formatting
-      - Managing long-running tasks with screen sessions
+      When to use:
+      - Get real numbers instead of guessing from memory
+      - Run code to prove it works vs theory
+      - Test actual behavior vs remembered specs
+      - Build and test live vs just listing steps
+      - Use screen to handle long jobs while doing other work
 
-      Best practices for Python:
-      - Write code to files rather than direct execution for better maintainability
-      - Use pandas/numpy for data analysis instead of manual calculations
-      - Check code quality with ruff:
-        `ruff check --select ALL --ignore COM812,CPY,D203,D213,FBT,RUF029,RUF100 --fix --unsafe-fixes script.py`
-      - Format consistently:
-        `ruff format --line-length 100 --skip-magic-trailing-comma true script.py`
-      - For general web access, prefer the separate 'web' tool - use this sandbox's
-        network capabilities only for specific development or investigation tasks
-
-      Managing the workspace:
-      - Use locations under /workspace for all files (each new session starts in this
-        working folder unless you've resumed a `screen` session)
-      - Create descriptive subfolders for different projects/tasks
-      - Store documentation and notes for yourself in the future in /workspace/notes
-      - Clean up temporary files and old screen sessions
-      - Use `screen` with descriptive session names for long-running tasks
-      - Keep timeouts short (2-5s) as tool waits for full duration
-      - Split complex operations into multiple commands for better feedback
+      Note: For general web checks use the 'web' tool - use this sandbox tool
+      for tasks that can't be performed by that one.
     inputSchema:
       type: object
       properties:
         command:
           type: string
-          description:
-            Commands to execute. Multiple lines will be submitted as provided.
-            For Python, use 'python3' or create .py files to run.
+          description: >
+            Commands to run. Multi-line input runs as given.
+            For Python, use 'python3' or make .py files.
+
+            Best practices:
+            - Save code to files vs direct run for better fixes
+            - Use pandas/numpy for fast data work
+            - Check code: `ruff check --select ALL --ignore COM812,CPY,D203,D213,FBT,RUF029,RUF100 --fix --unsafe-fixes script.py`
+            - Fix style: `ruff format --line-length 100 --skip-magic-trailing-comma true script.py`
+
+            Workspace tips:
+            - Work in /workspace (home dir)
+            - Make clear dirs per task
+            - Keep notes in /workspace/notes
+            - Clean old files/screens
+            - Use clear screen names
         timeout:
           type: integer
           default: 5
-          description:
-            Time to wait for output in seconds. Use shorter timeouts (2-5s)
-            and multiple commands for better responsiveness.
+          description: >
+            Secs to wait for output. Keep short (2-5s) and split big jobs into
+            small steps for better feedback, as tool waits full time.
       required: ["command"]
 
   web:
     description: >
-      Your knowledge is out of date and potentially flawed. This tool lets you access and
-      process web content to enhance your responses. Use this tool to:
+      Your knowledge is out of date and potentially flawed. This tool lets you
+      access and process web content to enhance your responses. Use this tool to:
       - Check current documentation when answering questions
       - Fetch example code or data to demonstrate solutions
       - Navigate through documentation using extracted links
