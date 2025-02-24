@@ -26,12 +26,16 @@ FROM python:3.13-slim-bookworm AS runtime
 WORKDIR /app
 ARG BUILD_ENV=prod
 
-# Install system dependencies and create user in one layer
+# Install system dependencies, missing commands, create user, and ensure /workspace is writable.
 RUN apt-get update && apt-get install -y --no-install-recommends \
   build-essential \
+  git \
+  tree \
   && rm -rf /var/lib/apt/lists/* \
   && groupadd -r app \
   && useradd -r -g app app \
+  && mkdir -p /workspace \
+  && chown app:app /workspace \
   && python -m venv /app/sandbox-venv \
   && /app/sandbox-venv/bin/pip install --no-cache-dir \
   aiodns \
