@@ -74,21 +74,19 @@ def make_fake_open_connection(lines: list[bytes]) -> tuple[Callable, DummyStream
 
 @pytest.mark.asyncio
 async def test_connect_without_sandbox_host(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Test that connection fails when SANDBOX_HOST is not set."""
-    monkeypatch.delenv("SANDBOX_HOST", raising=False)
+    """Test that connection fails when SANDBOX is not set."""
+    monkeypatch.delenv("SANDBOX", raising=False)
     with pytest.raises(McpError) as excinfo:
         await ShellConnection.connect()
-    if "SANDBOX_HOST environment variable is not set" not in str(excinfo.value):
-        pytest.fail(
-            "Expected error message about missing SANDBOX_HOST, but got: " + str(excinfo.value)
-        )
+    if "SANDBOX environment variable is not set" not in str(excinfo.value):
+        pytest.fail("Expected error message about missing SANDBOX, but got: " + str(excinfo.value))
 
 
 @pytest.mark.asyncio
 async def test_tool_sandbox_success(monkeypatch: pytest.MonkeyPatch) -> None:
     """Test a successful command execution using tool_sandbox."""
     # Set the environment variable for connection.
-    monkeypatch.setenv("SANDBOX_HOST", "127.0.0.1:1234")
+    monkeypatch.setenv("SANDBOX", "127.0.0.1:1234")
 
     async def fake_open_connection(
         host: str, port: int
@@ -119,7 +117,7 @@ async def test_run_command_timeout(
 ) -> None:
     """Test that a command timing out produces the expected timeout output."""
     host, port = sandbox_server
-    monkeypatch.setenv("SANDBOX_HOST", f"{host}:{port}")
+    monkeypatch.setenv("SANDBOX", f"{host}:{port}")
 
     # Use a real command that will timeout
     result = await tool_sandbox("sleep 10", time_limit=1)
