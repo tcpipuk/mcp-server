@@ -22,11 +22,7 @@ FROM debian:bookworm-slim
 # Configure shell to exit on any error, including pipe failures
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
-# Copy runtime scripts
-COPY --chmod=755 entrypoint.sh /
-
 # Install system dependencies and configure user
-# Note: Packages are sorted alphabetically for maintainability
 RUN apt-get update && apt-get install -y --no-install-recommends \
   git \
   screen \
@@ -38,6 +34,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   --home /workspace --shell /bin/bash \
   && mkdir -p -m 750 /workspace \
   && chown sandbox:sandbox /workspace
+
+# Copy entrypoint script
+COPY --chmod=755 entrypoint.sh /
 
 # Copy Python virtual environment from build stage
 COPY --from=uv --chown=sandbox:sandbox /opt/.venv /opt/venv
