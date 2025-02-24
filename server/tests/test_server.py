@@ -76,6 +76,7 @@ async def server(mock_yaml_file: Path) -> MCPServer:
 def test_yaml_loading(mock_yaml_file: Path) -> None:
     """Test that the YAML configuration can be loaded correctly."""
     config = yaml_safe_load(mock_yaml_file.read_text(encoding="utf-8"))
+    MAX_DESCRIPTION_LENGTH = 1024
 
     if "tools" not in config:
         pytest.fail("Missing 'tools' section in config")
@@ -83,10 +84,17 @@ def test_yaml_loading(mock_yaml_file: Path) -> None:
         pytest.fail("Missing 'sandbox' tool in config")
     if "web" not in config["tools"]:
         pytest.fail("Missing 'web' tool in config")
-    if "description" not in config["tools"]["sandbox"]:
-        pytest.fail("Missing 'description' in sandbox tool config")
-    if "description" not in config["tools"]["web"]:
-        pytest.fail("Missing 'description' in web tool config")
+
+    for tool_name in ("sandbox", "web"):
+        if "description" not in config["tools"][tool_name]:
+            pytest.fail(f"Missing 'description' in {tool_name} tool config")
+        
+        description_length = len(config["tools"][tool_name]["description"])
+        if description_length > MAX_DESCRIPTION_LENGTH:
+            pytest.fail(
+                f"Description for tool '{tool_name}' is too long: "
+                f"{description_length} characters (max {MAX_DESCRIPTION_LENGTH})"
+            )
 
 
 def test_server_initialisation(server: MCPServer) -> None:
@@ -140,3 +148,30 @@ def test_live_tools_yaml_file() -> None:
             pytest.fail(f"Missing '{tool}' configuration in live tools.yaml")
         if "inputSchema" not in config["tools"][tool]:
             pytest.fail(f"Missing 'inputSchema' for tool '{tool}' in live tools.yaml")
+
+
+def test_tool_description_length() -> None:
+    """Test that tool descriptions don't exceed the OpenAI API limit of 1024 characters."""
+    # Determine the project root (assumed one level above the tests directory)
+    project_root = Path(__file__).parent.parent
+    tools_yaml_path = project_root / "tools.yaml"
+    if not tools_yaml_path.exists():
+        pytest.fail(f"tools.yaml file not found at {tools_yaml_path}")
+
+    config = yaml_safe_load(tools_yaml_path.read_text(encoding="utf-8"))
+    
+    if "tools" not in config:
+        pytest.fail("Missing 'tools' section in tools.yaml")
+        
+    MAX_DESCRIPTION_LENGTH = 1024
+    
+    for tool_name, tool_config in config["tools"].items():
+        if "description" not in tool_config:
+            pytest.fail(f"Missing 'description' for tool '{tool_name}' in tools.yaml")
+            
+        description_length = len(tool_config["description"])
+        if description_length > MAX_DESCRIPTION_LENGTH:
+            pytest.fail(
+                f"Description for tool '{tool_name}' is too long: "
+                f"{description_length} characters (max {MAX_DESCRIPTION_LENGTH})"
+            )
