@@ -13,17 +13,18 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 
 # Create sandbox venv and install its dependencies
 RUN --mount=type=cache,target=/root/.cache/uv \
+  /bin/bash -c '\
   uv venv /app/sandbox-venv && \
   source /app/sandbox-venv/bin/activate && \
   uv pip install \
   aiodns \
   aiohttp \
   beautifulsoup4 \
-  ruff \
   numpy \
   pandas \
   requests \
-  && deactivate
+  ruff \
+  && deactivate'
 
 # Add the source code and install main project dependencies
 COPY . .
