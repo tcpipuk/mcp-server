@@ -1,40 +1,54 @@
 """Provide tools to execute shell commands in a persistent sandbox environment.
 
-Uses socat to connect to a bash process over a Unix socket, with support for
-running commands in screen sessions that persist between requests.
+Uses socat to connect to a bash process over a TCP connection defined by the SANDBOX_HOST
+environment variable, with support for running commands in screen sessions that persist between
+requests.
 """
 
 from __future__ import annotations
 
-import os
-import uuid
 from asyncio import (
     StreamReader,
     StreamWriter,
-    open_unix_connection as asyncio_open_unix_connection,
+    open_connection as asyncio_open_connection,
     sleep as asyncio_sleep,
     wait_for as asyncio_wait_for,
 )
 from dataclasses import dataclass
+from os import environ as os_environ
 from shlex import quote as shlex_quote
+from uuid import uuid4
+
+from mcp.shared.exceptions import McpError
+from mcp.types import INTERNAL_ERROR, ErrorData
 
 
-@dataclass
+@dataclass(slots=True)
 class ShellConnection:
-    """Manage connection to sandbox shell over Unix socket."""
+    """Manage connection to sandbox shell via TCP."""
 
     reader: StreamReader
     writer: StreamWriter
 
     @classmethod
     async def connect(cls) -> ShellConnection:
-        """Create new connection to sandbox shell.
+        """Create new connection to sandbox shell using TCP.
 
         Returns:
             ShellConnection instance
 
+        Raises:
+            McpError: If SANDBOX_HOST is not set.
         """
-        reader, writer = await asyncio_open_unix_connection(path=os.environ["SANDBOX_SOCKET"])
+        sandbox = os_environ.get("SANDBOX_HOST")
+        if not sandbox:
+            raise McpError(
+                ErrorData(
+                    code=INTERNAL_ERROR, message="SANDBOX_HOST environment variable is not set"
+                )
+            )
+        host, port_str = sandbox.split(":", 1)
+        reader, writer = await asyncio_open_connection(host, int(port_str))
         return cls(reader=reader, writer=writer)
 
     async def close(self) -> None:
@@ -43,22 +57,21 @@ class ShellConnection:
         await self.writer.wait_closed()
 
     async def run_command(
-        self, command: str, timeout: int = 5, screen: str | None = None
+        self, command: str, time_limit: int = 10, screen: str | None = None
     ) -> tuple[str, str, int]:
         """Run a command and return its output.
 
         Args:
             command: Shell command(s) to execute
-            timeout: Seconds to wait for output
+            time_limit: Seconds to wait for output
             screen: Optional screen session name
 
         Returns:
             Tuple of (stdout, stderr, exit_code)
-
         """
         if screen:
             # Generate random session name if not provided
-            screen = screen or f"mcp_{uuid.uuid4().hex[:8]}"
+            screen = screen or f"mcp_{uuid4().hex[:8]}"
 
             # Create new screen session or reconnect to existing one
             self.writer.write(
@@ -91,17 +104,17 @@ class ShellConnection:
         await self.writer.drain()
 
         try:
-            output = await asyncio_wait_for(self._read_until_prompt(), timeout=timeout)
-            return output, "", 0  # TODO: capture exit code and stderr
+            output = await asyncio_wait_for(self._read_until_prompt(), timeout=time_limit)
         except TimeoutError:
             return "", "Command timed out", 1
+        else:
+            return output, "", 0  # TODO: capture exit code and stderr
 
     async def _read_until_prompt(self) -> str:
         """Read output until shell prompt is seen.
 
         Returns:
             Command output formatted as a string
-
         """
         buffer = []
         while True:
@@ -114,28 +127,20 @@ class ShellConnection:
         return "".join(buffer)
 
 
-async def tool_shell(
-    command: str, cwd: str = "~", screen: str | None = None, timeout: int = 5
-) -> str:
+async def tool_sandbox(command: str, time_limit: int = 5) -> str:
     """Execute shell commands in the sandbox environment.
 
     Args:
         command: Shell command(s) to execute
-        cwd: Working directory for the command
-        screen: Optional screen session name
-        timeout: Seconds to wait for output
+        time_limit: Seconds to wait for output
 
     Returns:
         Command output formatted as a string
-
     """
     conn = await ShellConnection.connect()
     try:
-        # Change to requested directory
-        if cwd != "~":
-            await conn.run_command(f"cd {cwd}")
-
-        stdout, stderr, exit_code = await conn.run_command(command, timeout=timeout, screen=screen)
+        # Execute the provided command directly (cwd and screen options removed to match tools.yaml)
+        stdout, stderr, exit_code = await conn.run_command(command, time_limit)
 
         # Format output
         sections = []
