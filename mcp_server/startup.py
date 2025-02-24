@@ -8,7 +8,6 @@ from __future__ import annotations
 import os
 import re
 from pathlib import Path
-from shlex import quote as shlex_quote
 from shutil import which
 from subprocess import CalledProcessError, run as subprocess_run  # noqa: S404
 from tempfile import NamedTemporaryFile
@@ -83,25 +82,37 @@ def _validate_ssh_key(key: str) -> None:
 
 
 def setup_git_config() -> None:
-    """Configure git with user details from environment if provided."""
+    """Configure git with user details from environment if provided.
+
+    Raises:
+        McpError: If git configuration fails
+    """
     git_name = os.environ.get("GIT_USER_NAME")
     git_email = os.environ.get("GIT_USER_EMAIL")
     git_path = _get_command_path("git")
 
-    if git_name:
-        _validate_git_name(git_name)
-        subprocess_run(  # noqa: S603
-            [git_path, "config", "--global", "user.name", shlex_quote(git_name)],
-            check=True,
-            capture_output=True,
-        )
-    if git_email:
-        _validate_git_email(git_email)
-        subprocess_run(  # noqa: S603
-            [git_path, "config", "--global", "user.email", shlex_quote(git_email)],
-            check=True,
-            capture_output=True,
-        )
+    try:
+        if git_name:
+            _validate_git_name(git_name)
+            subprocess_run(  # noqa: S603
+                [git_path, "config", "--global", "user.name", git_name],
+                check=True,
+                capture_output=True,
+            )
+        if git_email:
+            _validate_git_email(git_email)
+            subprocess_run(  # noqa: S603
+                [git_path, "config", "--global", "user.email", git_email],
+                check=True,
+                capture_output=True,
+            )
+    except CalledProcessError as exc:
+        raise McpError(
+            ErrorData(
+                code=INTERNAL_ERROR,
+                message=f"Failed to configure git: {exc.stderr.decode(errors='replace')}",
+            )
+        ) from exc
 
 
 def setup_ssh_agent() -> None:
