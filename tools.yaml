@@ -57,19 +57,22 @@ tools:
           description: Limit response length in characters (zero means no limit)
       required: ["url"]
 
-  workspace_tree:
+  workspace_git:
     description: >
-      List files and directories in the workspace, similar to the Unix tree command.
-      Outputs JSON format for easier parsing. Respects .gitignore and hides .git
-      directory to save space.
+      Run git commands in the workspace. Useful for cloning repositories, managing
+      branches, committing changes, etc. Authentication for SSH operations uses the
+      provided private key.
     inputSchema:
       type: object
       properties:
-        path:
+        command:
           type: string
-          description: Optional subdirectory within workspace to list (defaults to workspace root)
+          description: Full git command to run (e.g. "git clone git@github.com:user/repo.git")
+        cwd:
+          type: string
+          description: Working directory for the command, relative to workspace root
           default: "."
-      required: []
+      required: ["command"]
 
   workspace_read:
     description: >
@@ -88,6 +91,20 @@ tools:
           default: 65535
           description: Maximum bytes to truncate (default 64KiB, 0 means no limit)
       required: ["files"]
+
+  workspace_tree:
+    description: >
+      List files and directories in the workspace, similar to the Unix tree command.
+      Outputs JSON format for easier parsing. Respects .gitignore and hides .git
+      directory to save space.
+    inputSchema:
+      type: object
+      properties:
+        path:
+          type: string
+          description: Optional subdirectory within workspace to list (defaults to workspace root)
+          default: "."
+      required: []
 
   workspace_write:
     description: >
@@ -108,20 +125,3 @@ tools:
           default: "overwrite"
           description: Whether to overwrite the file or apply content as a diff patch
       required: ["path", "content"]
-
-  git:
-    description: >
-      Run git commands in the workspace. Useful for cloning repositories, managing
-      branches, committing changes, etc. Authentication for SSH operations uses the
-      provided private key.
-    inputSchema:
-      type: object
-      properties:
-        command:
-          type: string
-          description: Full git command to run (e.g. "git clone git@github.com:user/repo.git")
-        cwd:
-          type: string
-          description: Working directory for the command, relative to workspace root
-          default: "."
-      required: ["command"]
