@@ -36,11 +36,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   && mkdir -p -m 750 /workspace \
   && chown sandbox:sandbox /workspace
 
-# Copy entrypoint script
-COPY --chmod=755 entrypoint.sh /
-
 # Copy Python virtual environment from build stage
 COPY --from=uv --chown=sandbox:sandbox /opt/.venv /opt/venv
+
+# Copy entrypoint script
+COPY --chmod=755 --chown=0:0 entrypoint.sh /
 
 # Switch to non-root user for security
 USER sandbox

@@ -4,13 +4,9 @@ set -e
 # Shell wrapper to execute for each connection
 cat >/tmp/shell_wrapper.sh <<'EOF'
 #!/bin/bash
-trap 'exit' INT TERM
-trap 'kill -TERM $PID' EXIT
-
 source /opt/venv/bin/activate
-bash -i & 
-PID=$!
-wait $PID
+PS1="(sandbox) \u@\h:\w\$ "
+exec bash --login
 EOF
 
 chmod +x /tmp/shell_wrapper.sh
