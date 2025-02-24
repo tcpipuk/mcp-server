@@ -11,22 +11,6 @@ COPY pyproject.toml uv.lock ./
 RUN --mount=type=cache,target=/root/.cache/uv \
   uv sync --frozen --no-install-project ${BUILD_ENV:+"--dev"} --no-editable
 
-# Create sandbox venv and install its dependencies
-RUN --mount=type=cache,target=/root/.cache/uv \
-  /bin/bash -c '\
-  uv venv /app/sandbox-venv && \
-  source /app/sandbox-venv/bin/activate && \
-  uv pip install \
-  aiodns \
-  aiohttp \
-  beautifulsoup4 \
-  GitPython \
-  numpy \
-  pandas \
-  requests \
-  ruff \
-  && deactivate'
-
 # Add the source code and install main project dependencies
 COPY . .
 RUN --mount=type=cache,target=/root/.cache/uv \
@@ -45,8 +29,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   && rm -rf /var/lib/apt/lists/* \
   && groupadd -r app \
   && useradd -r -g app app \
-  && mkdir -p /workspace \
-  && chown app:app /workspace \
   && mkdir -p -m 700 ~/.ssh \
   && chown app:app ~/.ssh \
   && mkdir -p /home/app/.config/git \
@@ -59,9 +41,7 @@ COPY --from=uv --chown=app:app /app/ .
 USER app
 ENV PATH="/app/.venv/bin:/app/sandbox-venv/bin:$PATH" \
   OPENBLAS_NUM_THREADS=1 \
-  RUFF_CACHE_DIR=/tmp/.ruff_cache \
-  SANDBOX_PYTHON="/app/sandbox-venv/bin/python" \
-  SANDBOX_RUFF="/app/sandbox-venv/bin/ruff"
+  RUFF_CACHE_DIR=/tmp/.ruff_cache
 
 # Use wrapper script to handle startup
 ENTRYPOINT ["/app/docker-entrypoint.sh"]

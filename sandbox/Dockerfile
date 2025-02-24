@@ -6,10 +6,16 @@ SHELL ["/bin/bash", "-o", "pipefail", "-c"]
 
 # Install system dependencies and configure user
 RUN apt-get update && apt-get install -y --no-install-recommends \
+  curl \
+  dnsutils \
   git \
+  iputils-ping \
+  iputils-tracepath \
   screen \
   socat \
+  traceroute \
   tree \
+  wget \
   && rm -rf /var/lib/apt/lists/* \
   # Create sandbox user and group
   && groupadd -g 1000 sandbox \

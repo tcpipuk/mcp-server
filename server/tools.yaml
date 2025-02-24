@@ -1,29 +1,57 @@
 tools:
-  python:
+  sandbox:
     description: >
-      Execute code in a Python 3.13 sandbox to demonstrate concepts and calculate results.
-      Instead of writing example code for users to run, use this tool directly to:
-      - Show pandas/numpy operations with real data
-      - Calculate results that would be tedious manually
-      - Demonstrate and verify working code examples
+      Access a bash shell in a persistent sandbox environment that lets you help the user
+      by running commands, writing code, and managing files. Everything persists between
+      commands in /workspace, so you can build up complex solutions over multiple steps.
 
-      Includes: numpy, pandas, requests, bs4, aiodns, aiohttp. Can either run code or lint
-      with Ruff. When showing code or output to users, format it appropriately in markdown.
+      Core capabilities:
+      - Python 3.13 with pandas/numpy for data analysis and calculations
+      - Network tools (aiodns, aiohttp, beautifulsoup4, requests) for targeted web tasks
+      - Development tools (git, ruff) for managing and checking code
+      - System tools (curl, dig, host, ping, screen, tree, wget) for investigation
+
+      When to use this tool:
+      - Running Python code to demonstrate concepts or calculate results
+      - Investigating network/system issues that need multiple commands
+      - Building up complex solutions that need persistent storage
+      - Testing and improving code quality with linting/formatting
+      - Managing long-running tasks with screen sessions
+
+      Best practices for Python:
+      - Write code to files rather than direct execution for better maintainability
+      - Use pandas/numpy for data analysis instead of manual calculations
+      - Check code quality with ruff:
+        `ruff check --select ALL --ignore COM812,CPY,D203,D213,FBT,RUF029,RUF100 --fix --unsafe-fixes script.py`
+      - Format consistently:
+        `ruff format --line-length 100 --skip-magic-trailing-comma true script.py`
+      - For general web access, prefer the separate 'web' tool - use this sandbox's
+        network capabilities only for specific development or investigation tasks
+
+      Managing the workspace:
+      - Use locations under /workspace for all files (each new session starts in this
+        working folder unless you've resumed a `screen` session)
+      - Create descriptive subfolders for different projects/tasks
+      - Store documentation and notes for yourself in the future in /workspace/notes
+      - Clean up temporary files and old screen sessions
+      - Use `screen` with descriptive session names for long-running tasks
+      - Keep timeouts short (2-5s) as tool waits for full duration
+      - Split complex operations into multiple commands for better feedback
     inputSchema:
       type: object
       properties:
-        code:
+        command:
           type: string
-          description: Python code to use
-        time_limit:
+          description:
+            Commands to execute. Multiple lines will be submitted as provided.
+            For Python, use 'python3' or create .py files to run.
+        timeout:
           type: integer
-          default: 10
-          description: Timeout in seconds for execution (ignored when linting)
-        lint:
-          type: boolean
-          default: false
-          description: Lint the code using Ruff instead of executing it
-      required: ["code"]
+          default: 5
+          description:
+            Time to wait for output in seconds. Use shorter timeouts (2-5s)
+            and multiple commands for better responsiveness.
+      required: ["command"]
 
   web:
     description: >
@@ -57,106 +85,3 @@ tools:
           default: 0
           description: Limit response length in characters (zero means no limit)
       required: ["url"]
-
-  workspace_git:
-    description: Run git commands in the workspace. Useful for cloning
-      repositories, managing branches, committing changes, etc. Authentication
-      for SSH operations uses the provided private key.
-    inputSchema:
-      type: object
-      properties:
-        command:
-          type: string
-          description: Full git command to run (e.g. "git clone git@github.com:user/repo.git")
-        cwd:
-          type: string
-          description: Working directory for the command, relative to workspace root
-          default: "."
-      required: ["command"]
-
-  workspace_read:
-    description: Read the contents of one or more files from the workspace.
-      Files are returned with their paths and contents. Large files can be
-      limited using max_length.
-    inputSchema:
-      type: object
-      properties:
-        files:
-          type: array
-          items:
-            type: string
-          description: List of file paths to read relative to workspace root
-        max_length:
-          type: integer
-          default: 65535
-          description: Maximum bytes to truncate (default 64KiB, 0 means no limit)
-      required: ["files"]
-
-  workspace_tree:
-    description: List files and directories in the workspace, similar to the
-      Unix `tree` command. Outputs JSON format for easier parsing. Respects
-      .gitignore and hides .git directory to save space.
-    inputSchema:
-      type: object
-      properties:
-        path:
-          type: string
-          description: Optional subdirectory within workspace to list (defaults
-            to workspace root)
-          default: "."
-      required: []
-
-  workspace_write:
-    description: Write or update a file in the workspace. Can either
-      overwrite the entire file or apply a diff patch. Creates parent
-      directories if needed.
-    inputSchema:
-      type: object
-      properties:
-        path:
-          type: string
-          description: Path to write to, relative to workspace root
-        content:
-          type: string
-          description: New file content (for overwrite mode) or unified diff
-            patch (for patch mode). Patches must include @@ line(s) and match
-            current content correctly.
-        mode:
-          type: string
-          enum: ["overwrite", "patch"]
-          default: "overwrite"
-          description: Whether to overwrite file or apply content as a diff patch.
-      required: ["path", "content"]
-
-  shell:
-    description: >
-      Execute commands in a persistent Linux environment with common development
-      tools. The environment persists between commands and includes Python, git,
-      and standard Unix tools. Commands can run in named screen sessions that
-      persist even after timeouts. Use this to:
-      - Set up and manage development environments
-      - Run long-running processes in screen sessions
-      - Work with files that persist between commands
-    inputSchema:
-      type: object
-      properties:
-        command:
-          type: string
-          description: Shell commands to execute. Multiple lines will be
-            submitted as provided.
-        cwd:
-          type: string
-          description: Working directory for the command
-          default: "~"
-        screen:
-          type: string
-          description: Name of screen session to use. If provided, the command
-            runs in this session. The session is created if it doesn't exist, or
-            resumed if it does. A random session name is generated if not provided.
-            The stdio and stderr is returned and the session is detached after the
-            time expires (including any `screen` output since the last detatch).
-        timeout:
-          type: integer
-          default: 5
-          description: Time to wait for command output in seconds
-      required: ["command"]

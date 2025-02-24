@@ -8,10 +8,13 @@ from __future__ import annotations
 
 import os
 import uuid
-from asyncio import StreamReader, StreamWriter
-from asyncio import open_unix_connection as asyncio_open_unix_connection
-from asyncio import sleep as asyncio_sleep
-from asyncio import wait_for as asyncio_wait_for
+from asyncio import (
+    StreamReader,
+    StreamWriter,
+    open_unix_connection as asyncio_open_unix_connection,
+    sleep as asyncio_sleep,
+    wait_for as asyncio_wait_for,
+)
 from dataclasses import dataclass
 from shlex import quote as shlex_quote
 

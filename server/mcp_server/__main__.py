@@ -14,24 +14,20 @@ from pathlib import Path
 from yaml import safe_load as yaml_safe_load
 
 from .server import MCPServer
-from .tools import (
-    tool_python,
-    tool_web,
-    tool_workspace_git,
-    tool_workspace_read,
-    tool_workspace_tree,
-    tool_workspace_write,
-)
+from .tools import tool_sandbox, tool_web
 
 
 def main() -> None:
     """Provide command-line entrypoint for the MCP fetch server."""
-    parser = ArgumentParser(description="Give a model the ability to make web requests")
+    parser = ArgumentParser(description="Give your LLM access to external tools")
+    parser.add_argument("--sandbox", type=str, help="TCP host:port pair (e.g. mcp-sandbox:8080)")
     parser.add_argument("--sse-host", type=str, help="SSE listening address (e.g. 0.0.0.0)")
     parser.add_argument("--sse-port", type=int, help="SSE listening port (e.g. 3001)")
     parser.add_argument("--user-agent", type=str, help="Custom User-Agent string")
     args = parser.parse_args()
 
+    if args.sandbox:
+        os_environ["SANDBOX"] = args.sandbox
     if args.sse_host:
         os_environ["SSE_HOST"] = args.sse_host
     if args.sse_port:
@@ -40,12 +36,11 @@ def main() -> None:
         os_environ["USER_AGENT"] = args.user_agent
 
     config = yaml_safe_load(Path("tools.yaml").read_text(encoding="utf-8"))
-    config["tools"]["python"]["method"] = tool_python
     config["tools"]["web"]["method"] = tool_web
-    config["tools"]["workspace_git"]["method"] = tool_workspace_git
-    config["tools"]["workspace_read"]["method"] = tool_workspace_read
-    config["tools"]["workspace_tree"]["method"] = tool_workspace_tree
-    config["tools"]["workspace_write"]["method"] = tool_workspace_write
+    config["tools"]["sandbox"]["method"] = tool_sandbox
+    # Remove the sandbox tool if there's no sandbox
+    if not os_environ.get("SANDBOX") and "sandbox" in config["tools"]:
+        del config["tools"]["sandbox"]
     server = MCPServer(config)
     with contextlib_suppress(KeyboardInterrupt, CancelledError):
         asyncio_run(server.serve())

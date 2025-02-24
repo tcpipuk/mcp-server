@@ -32,7 +32,7 @@ Once running, your AI assistant will be able to:
    services:
      mcp-server:
        environment:
-         - SANDBOX_HOST=mcp-sandbox:8080
+         - SANDBOX=mcp-sandbox:8080
          - SSE_HOST=0.0.0.0
          - SSE_PORT=8080
          - USER_AGENT=CustomAgent/1.0
