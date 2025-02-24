@@ -28,7 +28,7 @@ jobs:
         with:
           context: workflow
           images: |
-            name=ghcr.io/${{ github.repository }}/mcp-sandbox
+            name=ghcr.io/${{ github.repository }}/sandbox
           tags: |
             type=raw,value=latest,enable={{is_default_branch}}
             type=ref,event=branch

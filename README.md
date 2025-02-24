@@ -30,17 +30,30 @@ Once running, your AI assistant will be able to:
 
    ```yaml:docker-compose.yml
    services:
-   mcp-server:
-      environment:
+     mcp-server:
+       environment:
+         - SANDBOX_HOST=mcp-sandbox:8080
          - SSE_HOST=0.0.0.0
          - SSE_PORT=8080
          - USER_AGENT=CustomAgent/1.0
-      image: ghcr.io/tcpipuk/mcp-server:latest
-      restart: unless-stopped
-      stop_grace_period: 1s
+       image: ghcr.io/tcpipuk/mcp-server/server:latest
+       restart: unless-stopped
+       stop_grace_period: 1s
+
+     mcp-sandbox:
+       image: ghcr.io/tcpipuk/mcp-server/sandbox:latest
+       volumes:
+         - ./workspace:/workspace
+       restart: unless-stopped
+       stop_grace_period: 1s
    ```
 
-3. Run `docker compose up` to start the server
+3. Run `docker compose up` to start both containers
+
+The setup uses two containers:
+
+- The main server container handles connections and coordinates tools
+- A sandbox container provides a clean, isolated environment for running commands safely
 
 > **Note**: The server will automatically use network mode (SSE) when you set `SSE_HOST` and
 > `SSE_PORT`. This is what you want for using it with LibreChat.

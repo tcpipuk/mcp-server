@@ -62,7 +62,7 @@ jobs:
         with:
           context: workflow
           images: |
-            name=ghcr.io/${{ github.repository }}/mcp-server
+            name=ghcr.io/${{ github.repository }}/server
           tags: |
             type=raw,value=latest,enable={{is_default_branch}}
             type=ref,event=branch
