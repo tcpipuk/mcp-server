@@ -28,9 +28,9 @@ def mock_yaml_file(tmp_path: Path) -> Path:
     """
     yaml_content = {
         "tools": {
-            "python": {
-                "description": "Test Python tool",
-                "inputSchema": {"type": "object", "properties": {"code": {"type": "string"}}},
+            "sandbox": {
+                "description": "Test Sandbox tool",
+                "inputSchema": {"type": "object", "properties": {"command": {"type": "string"}}},
             },
             "web": {
                 "description": "Test Web tool",
@@ -79,12 +79,12 @@ def test_yaml_loading(mock_yaml_file: Path) -> None:
 
     if "tools" not in config:
         pytest.fail("Missing 'tools' section in config")
-    if "python" not in config["tools"]:
-        pytest.fail("Missing 'python' tool in config")
+    if "sandbox" not in config["tools"]:
+        pytest.fail("Missing 'sandbox' tool in config")
     if "web" not in config["tools"]:
         pytest.fail("Missing 'web' tool in config")
-    if "description" not in config["tools"]["python"]:
-        pytest.fail("Missing 'description' in python tool config")
+    if "description" not in config["tools"]["sandbox"]:
+        pytest.fail("Missing 'description' in sandbox tool config")
     if "description" not in config["tools"]["web"]:
         pytest.fail("Missing 'description' in web tool config")
 
@@ -135,7 +135,7 @@ def test_live_tools_yaml_file() -> None:
     if "tools" not in config:
         pytest.fail("Missing 'tools' section in live tools.yaml")
 
-    for tool in ("python", "web"):
+    for tool in ("sandbox", "web"):
         if tool not in config["tools"]:
             pytest.fail(f"Missing '{tool}' configuration in live tools.yaml")
         if "inputSchema" not in config["tools"][tool]:
