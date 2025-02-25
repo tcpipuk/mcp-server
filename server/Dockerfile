@@ -25,21 +25,15 @@ ARG BUILD_ENV=prod
 RUN apt-get update \
   && apt-get install -y --no-install-recommends socat \
   && rm -rf /var/lib/apt/lists/* \
-  && groupadd -r app \
-  && useradd -r -g app app \
-  && mkdir -p -m 700 ~/.ssh \
-  && chown app:app ~/.ssh \
-  && mkdir -p /home/app/.config/git \
-  && chown -R app:app /home/app/.config
+  && groupadd -r appuser \
+  && useradd -r -g appuser appuser
 
 # Copy only necessary files from build stage
-COPY --from=uv --chown=app:app /app/ .
+COPY --from=uv --chown=appuser:appuser /app/ .
 
 # Switch to non-root user and set up environment
-USER app
-ENV PATH="/app/.venv/bin:/app/sandbox-venv/bin:$PATH" \
-  OPENBLAS_NUM_THREADS=1 \
-  RUFF_CACHE_DIR=/tmp/.ruff_cache
+USER appuser
+ENV PATH="/app/.venv/bin:$PATH"
 
 # Use wrapper script to handle startup
 ENTRYPOINT ["/app/entrypoint.sh"]
