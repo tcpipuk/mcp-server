@@ -38,6 +38,7 @@ SCREEN_ID_LENGTH: Final[int] = 8
 @dataclass(frozen=True, slots=True)
 class CommandResult:
     """Hold the result of a command execution."""
+
     stdout: str = field(default="")
     stderr: str = field(default="")
 
@@ -46,10 +47,10 @@ class CommandResult:
         """Format the command result for display."""
         if stderr := self.stderr.strip():
             return f"Error:\n```\n{stderr}\n```"
-        
+
         if stdout := self.stdout.strip():
             return f"Output:\n```\n{stdout}\n```"
-        
+
         return "No output"
 
 
@@ -107,14 +108,14 @@ class ShellConnection:
 
             # Send the command block
             await self._write_command(command)
-            
+
             # Read all output until next prompt
             output = await asyncio_wait_for(self._read_until_prompt(), timeout=time_limit)
-            
+
             return CommandResult(stdout=output)
         except TimeoutError:
             return CommandResult(stderr="Command timed out")
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             return CommandResult(stderr=str(e))
 
     async def _write_command(self, command: str) -> None:

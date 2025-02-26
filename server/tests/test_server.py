@@ -15,6 +15,9 @@ from mcp_server.tools import tool_sandbox, tool_web
 if TYPE_CHECKING:
     from collections.abc import Generator
 
+# Constants for testing
+MAX_DESCRIPTION_LENGTH = 1024
+
 
 @pytest.fixture
 def mock_yaml_file(tmp_path: Path) -> Path:
@@ -76,7 +79,6 @@ async def server(mock_yaml_file: Path) -> MCPServer:
 def test_yaml_loading(mock_yaml_file: Path) -> None:
     """Test that the YAML configuration can be loaded correctly."""
     config = yaml_safe_load(mock_yaml_file.read_text(encoding="utf-8"))
-    MAX_DESCRIPTION_LENGTH = 1024
 
     if "tools" not in config:
         pytest.fail("Missing 'tools' section in config")
@@ -88,7 +90,7 @@ def test_yaml_loading(mock_yaml_file: Path) -> None:
     for tool_name in ("sandbox", "web"):
         if "description" not in config["tools"][tool_name]:
             pytest.fail(f"Missing 'description' in {tool_name} tool config")
-        
+
         description_length = len(config["tools"][tool_name]["description"])
         if description_length > MAX_DESCRIPTION_LENGTH:
             pytest.fail(
@@ -159,16 +161,14 @@ def test_tool_description_length() -> None:
         pytest.fail(f"tools.yaml file not found at {tools_yaml_path}")
 
     config = yaml_safe_load(tools_yaml_path.read_text(encoding="utf-8"))
-    
+
     if "tools" not in config:
         pytest.fail("Missing 'tools' section in tools.yaml")
-        
-    MAX_DESCRIPTION_LENGTH = 1024
-    
+
     for tool_name, tool_config in config["tools"].items():
         if "description" not in tool_config:
             pytest.fail(f"Missing 'description' for tool '{tool_name}' in tools.yaml")
-            
+
         description_length = len(tool_config["description"])
         if description_length > MAX_DESCRIPTION_LENGTH:
             pytest.fail(
