@@ -35,6 +35,9 @@ addopts = "-ra -v"
 asyncio_mode = "strict"
 asyncio_default_fixture_loop_scope = "session"
 cache_dir = "/tmp/.pytest_cache"
+filterwarnings = [
+  "ignore:assertions not in test modules or plugins will be ignored:pytest.PytestConfigWarning",
+]
 testpaths = "tests"
 
 [tool.ruff]
