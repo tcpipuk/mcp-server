@@ -1,4 +1,5 @@
 name: Build MCP Server
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -11,10 +12,19 @@ on:
       - ".github/workflows/build-server.yml"
   workflow_dispatch:
 
+permissions:
+  contents: read
+  packages: write
+  pull-requests: write
+
 jobs:
   test:
-    name: Pytest
+    name: Pytest (PYTHONOPTIMIZE=${{ matrix.optimize }})
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        optimize: [0, 2]
+      fail-fast: false
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -30,20 +40,78 @@ jobs:
         with:
           context: server
           load: true
-          build-args: BUILD_ENV=dev
-          tags: mcp-server:test
+          build-args: |
+            BUILD_ENV=dev
+            PYTHON_OPTIMIZE=${{ matrix.optimize }}
+          tags: mcp-server:test-${{ matrix.optimize }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
       - name: Run tests and output results
         run: |
           set -o pipefail
-          docker run --rm -e BUILD_ENV=dev mcp-server:test | tee pytest_output.txt
+          # Run test with volume mount
+          mkdir -m 777 -p memory_profiles
+          docker run --rm -e BUILD_ENV=dev -v $(pwd)/memory_profiles:/app/memory_profiles mcp-server:test-${{ matrix.optimize }} | tee pytest_output.txt
           exit_code=${PIPESTATUS[0]}
+          # Add test results to step summary
           echo '```' >> "$GITHUB_STEP_SUMMARY"
           cat pytest_output.txt >> "$GITHUB_STEP_SUMMARY"
           echo '```' >> "$GITHUB_STEP_SUMMARY"
           exit $exit_code
+
+      - name: Upload memory profile
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: memory-profile-O${{ matrix.optimize }}
+          path: memory_profiles/memory_profile_O${{ matrix.optimize }}.json
+          if-no-files-found: ignore
+
+  compare-memory:
+    name: Compare Memory Usage
+    needs: test
+    runs-on: ubuntu-latest
+    if: success()
+    steps:
+      - name: Download memory profiles
+        uses: actions/download-artifact@v4
+        with:
+          path: memory_profiles
+
+      - name: Install jq
+        run: sudo apt-get install -y jq
+
+      - name: Compare memory usage
+        run: |
+          echo "## Memory Usage Comparison" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Optimization Level | Peak Memory (MB) | Final Memory (MB) | Memory Growth (MB) | Duration (sec) |" >> "$GITHUB_STEP_SUMMARY"
+          echo "| ----------------- | --------------- | ---------------- | ------------------ | -------------- |" >> "$GITHUB_STEP_SUMMARY"
+
+          for level in 0 2; do
+            if [ -f "memory_profiles/memory-profile-O${level}/memory_profile_O${level}.json" ]; then
+              peak=$(jq -r '.summary.peak_rss_mb' "memory_profiles/memory-profile-O${level}/memory_profile_O${level}.json")
+              final=$(jq -r '.summary.final_rss_mb' "memory_profiles/memory-profile-O${level}/memory_profile_O${level}.json")
+              growth=$(jq -r '.summary.rss_difference_mb' "memory_profiles/memory-profile-O${level}/memory_profile_O${level}.json")
+              duration=$(jq -r '.summary.duration_seconds' "memory_profiles/memory-profile-O${level}/memory_profile_O${level}.json")
+
+              echo "| O${level} | ${peak} | ${final} | ${growth} | ${duration} |" >> "$GITHUB_STEP_SUMMARY"
+            else
+              echo "| O${level} | N/A | N/A | N/A | N/A |" >> "$GITHUB_STEP_SUMMARY"
+            fi
+          done
+
+          # Calculate percentage differences
+          if [ -f "memory_profiles/memory-profile-O0/memory_profile_O0.json" ] && [ -f "memory_profiles/memory-profile-O2/memory_profile_O2.json" ]; then
+            peak_o0=$(jq -r '.summary.peak_rss_mb' "memory_profiles/memory-profile-O0/memory_profile_O0.json")
+            peak_o2=$(jq -r '.summary.peak_rss_mb' "memory_profiles/memory-profile-O2/memory_profile_O2.json")
+
+            if [ "$peak_o0" != "null" ] && [ "$peak_o2" != "null" ] && [ "$peak_o0" != "0" ]; then
+              reduction=$(echo "scale=2; 100 - ($peak_o2 * 100 / $peak_o0)" | bc)
+              echo "" >> "$GITHUB_STEP_SUMMARY"
+              echo "**Memory reduction with PYTHONOPTIMIZE=2 compared to no optimization: ${reduction}%**" >> "$GITHUB_STEP_SUMMARY"
+            fi
+          fi
 
   build:
     name: Docker build
@@ -87,5 +155,8 @@ jobs:
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            BUILD_ENV=prod
+            PYTHON_OPTIMIZE=2
           cache-from: type=gha
           cache-to: type=gha,mode=max

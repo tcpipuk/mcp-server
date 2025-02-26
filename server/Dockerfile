@@ -19,21 +19,29 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 # Prepare runtime image
 FROM python:3.13-slim-bookworm AS runtime
 WORKDIR /app
-ARG BUILD_ENV=prod
 
-# Install minimal system dependencies, create user, and ensure /workspace is writable
+# Set default build environment and optimisation level
+ARG BUILD_ENV=prod \
+  PYTHON_OPTIMIZE=2
+
+# Install minimal system dependencies and create runtime user
 RUN apt-get update \
   && apt-get install -y --no-install-recommends socat \
   && rm -rf /var/lib/apt/lists/* \
-  && groupadd -r appuser \
-  && useradd -r -g appuser appuser
+  && groupadd -g 1000 appuser \
+  && useradd -u 1000 -g 1000 -m appuser \
+  && mkdir -m 777 -p /app/memory_profiles \
+  && chown appuser:appuser /app/memory_profiles
 
 # Copy only necessary files from build stage
 COPY --from=uv --chown=appuser:appuser /app/ .
 
-# Switch to non-root user and set up environment
+# Switch to non-root user
+
+# Set environment variables for runtime
 USER appuser
-ENV PATH="/app/.venv/bin:$PATH"
+ENV PATH="/app/.venv/bin:$PATH" \
+  PYTHONOPTIMIZE=${PYTHON_OPTIMIZE}
 
 # Use wrapper script to handle startup
 ENTRYPOINT ["/app/entrypoint.sh"]
