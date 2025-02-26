@@ -35,8 +35,6 @@ addopts = "-ra -v"
 asyncio_mode = "strict"
 asyncio_default_fixture_loop_scope = "session"
 cache_dir = "/tmp/.pytest_cache"
-log-level = "INFO"
-strict-config = true
 testpaths = "tests"
 
 [tool.ruff]
