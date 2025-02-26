@@ -30,19 +30,33 @@ mcp-server = "mcp_server:main"
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
+[tool.pytest.ini_options]
+addopts = "-ra -v"
+asyncio_mode = "strict"
+asyncio_default_fixture_loop_scope = "session"
+cache_dir = "/tmp/.pytest_cache"
+log-level = "INFO"
+strict-config = true
+strict-markers = true
+testpaths = "tests"
+
 [tool.ruff]
+cache-dir = "/tmp/.cache/ruff"
+fix = true
 line-length = 100
 target-version = "py313"
+unsafe-fixes = true
 
 [tool.ruff.format]
 skip-magic-trailing-comma = true
 
 [tool.ruff.lint]
 select = ["ALL"]
-ignore = ["COM812", "CPY", "D203", "D213", "FBT", "RUF029", "RUF100"]
+ignore = ["COM812", "CPY", "D203", "D213", "FBT", "RUF029"]
 
 [tool.ruff.lint.isort]
 combine-as-imports = true
+required-imports = ["from __future__ import annotations"]
 split-on-trailing-comma = false
 
 [tool.ruff.lint.pydocstyle]
