@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 import pytest
+import pytest_asyncio
 from yaml import dump as yaml_dump, safe_load as yaml_safe_load
 
 from mcp_server.server import MCPServer
@@ -60,7 +61,7 @@ def server_env() -> Generator[None]:
             del os_environ[key]
 
 
-@pytest.fixture
+@pytest_asyncio.fixture
 async def server(mock_yaml_file: Path) -> MCPServer:
     """Create a test server instance.
 

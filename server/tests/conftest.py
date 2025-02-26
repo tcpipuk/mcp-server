@@ -11,6 +11,7 @@ from time import time as time_time
 from typing import TYPE_CHECKING
 
 import pytest
+import pytest_asyncio
 
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator, Generator
@@ -85,7 +86,7 @@ def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:
 
 
 @pytest.hookimpl(hookwrapper=True)
-def pytest_runtest_protocol(item: pytest.Item, nextitem: pytest.Item | None) -> Generator[None]:
+def pytest_runtest_protocol(item: pytest.Item, nextitem: pytest.Item) -> Generator[None]:
     """Track memory usage before and after each test."""
     if not HAS_PSUTIL:
         yield
@@ -117,7 +118,7 @@ def _setup_test_env() -> None:
     """Set up test environment variables and cleanup."""
 
 
-@pytest.fixture
+@pytest_asyncio.fixture
 async def sandbox_server(unused_tcp_port: int) -> AsyncGenerator[tuple[str, int]]:
     """Create a socat-based TCP server for sandbox testing.
 
