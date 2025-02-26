@@ -5,6 +5,8 @@ of the User-Agent string for HTTP requests. The server runs asynchronously to ha
 concurrent requests efficiently.
 """
 
+from __future__ import annotations
+
 from argparse import ArgumentParser
 from asyncio import CancelledError, run as asyncio_run
 from contextlib import suppress as contextlib_suppress

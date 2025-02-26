@@ -7,12 +7,17 @@ Tests include:
 - Execution using a screen session.
 """
 
-from collections.abc import Callable
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 import pytest
 from mcp.shared.exceptions import McpError
 
 from mcp_server.tools.sandbox import ShellConnection, tool_sandbox
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
 
 class DummyStreamReader:
@@ -63,9 +68,7 @@ def make_fake_open_connection(lines: list[bytes]) -> tuple[Callable, DummyStream
     """
     dummy_writer = DummyStreamWriter()
 
-    async def fake_open_connection(
-        host: str, port: int
-    ) -> tuple[DummyStreamReader, DummyStreamWriter]:
+    async def fake_open_connection(host: str, port: int) -> tuple[DummyStreamReader, DummyStreamWriter]:
         reader = DummyStreamReader(lines)
         return reader, dummy_writer
 
@@ -88,9 +91,7 @@ async def test_tool_sandbox_success(monkeypatch: pytest.MonkeyPatch) -> None:
     # Set the environment variable for connection.
     monkeypatch.setenv("SANDBOX", "127.0.0.1:1234")
 
-    async def fake_open_connection(
-        host: str, port: int
-    ) -> tuple[DummyStreamReader, DummyStreamWriter]:
+    async def fake_open_connection(host: str, port: int) -> tuple[DummyStreamReader, DummyStreamWriter]:
         # Simulate output lines ending with a prompt, including exit code response
         lines = [
             b"output line 1\n",
@@ -108,9 +109,7 @@ async def test_tool_sandbox_success(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 @pytest.mark.asyncio
-async def test_run_command_timeout(
-    monkeypatch: pytest.MonkeyPatch, sandbox_server: tuple[str, int]
-) -> None:
+async def test_run_command_timeout(monkeypatch: pytest.MonkeyPatch, sandbox_server: tuple[str, int]) -> None:
     """Test that a command timing out produces the expected timeout output."""
     host, port = sandbox_server
     monkeypatch.setenv("SANDBOX", f"{host}:{port}")

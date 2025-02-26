@@ -9,6 +9,8 @@ Each tool is designed to handle errors gracefully and provide clear feedback to 
 assistants solve problems independently.
 """
 
+from __future__ import annotations
+
 from .sandbox import tool_sandbox
 from .web import tool_web
 

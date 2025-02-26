@@ -91,9 +91,7 @@ class WebProcessor:
                     include_links=True,
                     include_tables=True,
                     with_metadata=True,
-                ) or add_error(
-                    content, "Extraction to markdown failed; returning raw content", append=False
-                )
+                ) or add_error(content, "Extraction to markdown failed; returning raw content", append=False)
 
             case ProcessingMode.RAW:
                 extracted = content
@@ -116,11 +114,7 @@ class WebProcessor:
         stripped = href.strip()
         if not stripped or any(stripped.startswith(prefix) for prefix in SKIP_HREF_PREFIXES):
             return None
-        return (
-            stripped
-            if stripped.startswith(("http://", "https://"))
-            else urljoin(self.url, stripped)
-        )
+        return stripped if stripped.startswith(("http://", "https://")) else urljoin(self.url, stripped)
 
     def _extract_links(self, content: str) -> dict[str, str]:
         """Extract all valid links with their anchor text.
@@ -134,9 +128,7 @@ class WebProcessor:
         valid_anchors = [
             (a, url)
             for a in anchors
-            if (href := a.get("href"))
-            and isinstance(href, str)
-            and (url := self._get_absolute_url(href))
+            if (href := a.get("href")) and isinstance(href, str) and (url := self._get_absolute_url(href))
         ]
 
         url_counts = Counter(url for _, url in valid_anchors)
@@ -144,11 +136,7 @@ class WebProcessor:
         return dict(
             sorted(
                 {
-                    url: next(
-                        a.get_text(strip=True)
-                        for a, anchor_url in valid_anchors
-                        if anchor_url == url
-                    )
+                    url: next(a.get_text(strip=True) for a, anchor_url in valid_anchors if anchor_url == url)
                     for url in url_counts
                 }.items(),
                 key=lambda x: (-url_counts[x[0]], x[0]),

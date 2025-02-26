@@ -73,9 +73,7 @@ class ShellConnection:
             McpError: If SANDBOX is not set or malformed
         """
         if not (sandbox := os_environ.get("SANDBOX")):
-            raise McpError(
-                ErrorData(code=INTERNAL_ERROR, message="SANDBOX environment variable is not set")
-            )
+            raise McpError(ErrorData(code=INTERNAL_ERROR, message="SANDBOX environment variable is not set"))
 
         try:
             host, port_str = sandbox.split(":", 1)

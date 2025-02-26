@@ -91,17 +91,14 @@ def pytest_runtest_protocol(item: pytest.Item, nextitem: pytest.Item | None) -> 
         yield
         return
 
+    # Gather memory data before and after test
     process = psutil.Process()
-
-    # Before test
     pre_memory = process.memory_info()
 
-    # Run the test
     yield
 
-    # After test
+    # Store memory data after test
     post_memory = process.memory_info()
-    # Store memory data for this test
     test_id = item.nodeid
     memory_data["tests"][test_id] = {
         "pre_rss": pre_memory.rss / (1024 * 1024),

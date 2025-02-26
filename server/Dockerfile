@@ -41,7 +41,9 @@ COPY --from=uv --chown=appuser:appuser /app/ .
 # Set environment variables for runtime
 USER appuser
 ENV PATH="/app/.venv/bin:$PATH" \
-  PYTHONOPTIMIZE=${PYTHON_OPTIMIZE}
+  PYTHONDONTWRITEBYTECODE=1 \
+  PYTHONOPTIMIZE=${PYTHON_OPTIMIZE} \
+  PYTHONUNBUFFERED=1
 
 # Use wrapper script to handle startup
 ENTRYPOINT ["/app/entrypoint.sh"]
