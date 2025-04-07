@@ -5,6 +5,8 @@ tools:
       engine to find current information, specific resources, or perform calculations.
       Use this tool when the user asks about recent events, technical details, or to find
       content like images, news, code, etc, or your task requires calculations or random data.
+      Instead of telling the user about suggested search queries, you can make further narrower
+      requests if the first result does not clearly answer the user's query.
     inputSchema:
       type: object
       properties:
@@ -21,7 +23,7 @@ tools:
             - Social: `!re` (Reddit)
             Special keywords (no `!`):
             - Stats: `avg 1 2 3`, `max`, `min`, `sum`, `prod`
-            - Random: `random uuid`, `random int`, `random color`
+            - Random: `random color`, `random int`, `random string`, `random uuid`
             - Hash: `sha512 text`
         time_range:
           type: string
@@ -35,17 +37,20 @@ tools:
       required: ["q"]
   web:
     description: >
-      This tool lets you read real web content to enhance your responses. Use this tool to:
-      - Check current documentation when answering questions
-      - Verify information before making recommendations
-      - Fetch example code or data to confirm solutions
-      - Navigate through documentation using extracted links
+      Your knowledge has a cut-off date and may be incomplete. Use this tool to access live web
+      pages using their URL. This is crucial for providing users with up-to-date, accurate
+      information. Key uses include:
+      - Verifying facts or checking the latest documentation before answering.
+      - Retrieving specific information, examples, or data from a known URL.
+      - Reading the actual content of web pages discovered via the 'search' tool to give a
+        more detailed and comprehensive answer to the user.
+      - Using 'links' mode to extract hyperlinks to understand websites and navigate them.
     inputSchema:
       type: object
       properties:
         url:
           type: string
-          description: URL to access - could be a web page, API endpoint, or a file on GitHub, etc.
+          description: URL to access - must be a complete and valid web address.
         mode:
           type: string
           enum:
@@ -53,13 +58,11 @@ tools:
             - raw
             - links
           description: >
-            How to process the content:
-            - `markdown` converts HTML to clean markdown (best for reading)
-            - `raw` gets unprocessed content (for non-HTML such as code, JSON, etc)
-            - `links` extracts hyperlinks from a webpage with anchor text
+            Processing mode: 'markdown' (default) for clean readable text, 'raw' for
+            unprocessed content (code, JSON, etc), 'links' to list all hyperlinks.
           default: markdown
         max_length:
           type: integer
-          description: Limit response length in characters (zero means no limit)
+          description: Optional character limit for the response (0 = no limit).
           default: 0
       required: ["url"]
