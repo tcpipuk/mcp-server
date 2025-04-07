@@ -23,10 +23,6 @@ tools:
             - Stats: `avg 1 2 3`, `max`, `min`, `sum`, `prod`
             - Random: `random uuid`, `random int`, `random color`
             - Hash: `sha512 text`
-        pageno:
-          type: integer
-          description: Page number for results pagination
-          default: 1
         time_range:
           type: string
           enum: ["day", "month", "year"]
