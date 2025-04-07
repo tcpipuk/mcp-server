@@ -11,7 +11,7 @@ import pytest_asyncio
 from yaml import dump as yaml_dump, safe_load as yaml_safe_load
 
 from mcp_server.server import MCPServer
-from mcp_server.tools import tool_sandbox, tool_web
+from mcp_server.tools import tool_search, tool_web
 
 if TYPE_CHECKING:
     from collections.abc import Generator
@@ -32,9 +32,9 @@ def mock_yaml_file(tmp_path: Path) -> Path:
     """
     yaml_content = {
         "tools": {
-            "sandbox": {
-                "description": "Test Sandbox tool",
-                "inputSchema": {"type": "object", "properties": {"command": {"type": "string"}}},
+            "search": {
+                "description": "Test Search tool",
+                "inputSchema": {"type": "object", "properties": {"query": {"type": "string"}}},
             },
             "web": {
                 "description": "Test Web tool",
@@ -72,7 +72,7 @@ async def server(mock_yaml_file: Path) -> MCPServer:
         Configured MCPServer instance
     """
     config = yaml_safe_load(mock_yaml_file.read_text(encoding="utf-8"))
-    config["tools"]["sandbox"]["method"] = tool_sandbox
+    config["tools"]["search"]["method"] = tool_search
     config["tools"]["web"]["method"] = tool_web
     return MCPServer(config)
 
@@ -83,12 +83,12 @@ def test_yaml_loading(mock_yaml_file: Path) -> None:
 
     if "tools" not in config:
         pytest.fail("Missing 'tools' section in config")
-    if "sandbox" not in config["tools"]:
-        pytest.fail("Missing 'sandbox' tool in config")
+    if "search" not in config["tools"]:
+        pytest.fail("Missing 'search' tool in config")
     if "web" not in config["tools"]:
         pytest.fail("Missing 'web' tool in config")
 
-    for tool_name in ("sandbox", "web"):
+    for tool_name in ("search", "web"):
         if "description" not in config["tools"][tool_name]:
             pytest.fail(f"Missing 'description' in {tool_name} tool config")
 
@@ -105,16 +105,16 @@ def test_server_initialisation(server: MCPServer) -> None:
     if not hasattr(server, "tools"):
         pytest.fail("Server missing tools attribute")
     tool_names = {tool.name for tool in server.tools}
-    if "sandbox" not in tool_names:
-        pytest.fail("Server missing sandbox tool")
+    if "search" not in tool_names:
+        pytest.fail("Server missing search tool")
     if "web" not in tool_names:
         pytest.fail("Server missing web tool")
 
-    sandbox_tool_config = server.config["tools"]["sandbox"]
+    search_tool_config = server.config["tools"]["search"]
     web_tool_config = server.config["tools"]["web"]
 
-    if sandbox_tool_config.get("method") != tool_sandbox:
-        pytest.fail("Sandbox tool has incorrect method")
+    if search_tool_config.get("method") != tool_search:
+        pytest.fail("Search tool has incorrect method")
     if web_tool_config.get("method") != tool_web:
         pytest.fail("Web tool has incorrect method")
 
@@ -146,7 +146,7 @@ def test_live_tools_yaml_file() -> None:
     if "tools" not in config:
         pytest.fail("Missing 'tools' section in live tools.yaml")
 
-    for tool in ("sandbox", "web"):
+    for tool in ("search", "web"):
         if tool not in config["tools"]:
             pytest.fail(f"Missing '{tool}' configuration in live tools.yaml")
         if "inputSchema" not in config["tools"][tool]:
