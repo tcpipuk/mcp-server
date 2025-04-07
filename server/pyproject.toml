@@ -2,7 +2,6 @@
 name = "mcp-server"
 version = "0.1.0"
 description = "Provides tools to clients over the Model Context Protocol, supporting both stdio and SSE"
-readme = "README.md"
 requires-python = ">=3.13"
 authors = [{ name = "Tom Foster" }]
 maintainers = [{ name = "Tom Foster", email = "tom@tcpip.uk" }]
@@ -31,9 +30,22 @@ mcp-server = "mcp_server:main"
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
+[tool.pytest.ini_options]
+addopts = "-ra -v"
+asyncio_mode = "strict"
+asyncio_default_fixture_loop_scope = "session"
+cache_dir = "/tmp/.pytest_cache"
+filterwarnings = [
+  "ignore:assertions not in test modules or plugins will be ignored:pytest.PytestConfigWarning",
+]
+testpaths = "tests"
+
 [tool.ruff]
-line-length = 100
+cache-dir = "/tmp/.cache/ruff"
+fix = true
+line-length = 110
 target-version = "py313"
+unsafe-fixes = true
 
 [tool.ruff.format]
 skip-magic-trailing-comma = true
@@ -44,10 +56,19 @@ ignore = ["COM812", "CPY", "D203", "D213", "FBT", "RUF029"]
 
 [tool.ruff.lint.isort]
 combine-as-imports = true
+required-imports = ["from __future__ import annotations"]
 split-on-trailing-comma = false
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["ARG001"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
 
 [tool.uv]
-dev-dependencies = ["pytest>=8.3.4", "pytest-asyncio>=0.25.3", "ruff>=0.9.6"]
+dev-dependencies = [
+  "psutil>=7.0.0",
+  "pytest>=8.3.4",
+  "pytest-asyncio>=0.25.3",
+  "ruff>=0.9.6",
+]

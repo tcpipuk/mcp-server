@@ -1,7 +1,16 @@
 """Provide tools to retrieve and process web content.
 
-Defines classes and functions to fetch web content and process it in various modes:
-markdown, raw text, or link extraction.
+Helps AI assistants access and understand web content through three processing modes:
+
+- markdown: Converts HTML to clean, readable markdown (default)
+- links: Extracts and formats hyperlinks with their anchor text
+- raw: Returns unprocessed content for APIs or non-HTML resources
+
+Features include:
+- Smart content extraction focusing on main text
+- Link processing with relative URL resolution
+- Configurable length limits
+- Detailed error messages for common issues
 """
 
 from __future__ import annotations
@@ -76,15 +85,14 @@ class WebProcessor:
             case ProcessingMode.MARKDOWN:
                 extracted = trafilatura_extract(
                     content,
-                    output_format="markdown",
+                    favor_recall=True,
                     include_formatting=True,
                     include_images=True,
                     include_links=True,
                     include_tables=True,
+                    output_format="markdown",
                     with_metadata=True,
-                ) or add_error(
-                    content, "Extraction to markdown failed; returning raw content", append=False
-                )
+                ) or add_error(content, "Extraction to markdown failed; returning raw content", append=False)
 
             case ProcessingMode.RAW:
                 extracted = content
@@ -107,11 +115,7 @@ class WebProcessor:
         stripped = href.strip()
         if not stripped or any(stripped.startswith(prefix) for prefix in SKIP_HREF_PREFIXES):
             return None
-        return (
-            stripped
-            if stripped.startswith(("http://", "https://"))
-            else urljoin(self.url, stripped)
-        )
+        return stripped if stripped.startswith(("http://", "https://")) else urljoin(self.url, stripped)
 
     def _extract_links(self, content: str) -> dict[str, str]:
         """Extract all valid links with their anchor text.
@@ -125,9 +129,7 @@ class WebProcessor:
         valid_anchors = [
             (a, url)
             for a in anchors
-            if (href := a.get("href"))
-            and isinstance(href, str)
-            and (url := self._get_absolute_url(href))
+            if (href := a.get("href")) and isinstance(href, str) and (url := self._get_absolute_url(href))
         ]
 
         url_counts = Counter(url for _, url in valid_anchors)
@@ -135,11 +137,7 @@ class WebProcessor:
         return dict(
             sorted(
                 {
-                    url: next(
-                        a.get_text(strip=True)
-                        for a, anchor_url in valid_anchors
-                        if anchor_url == url
-                    )
+                    url: next(a.get_text(strip=True) for a, anchor_url in valid_anchors if anchor_url == url)
                     for url in url_counts
                 }.items(),
                 key=lambda x: (-url_counts[x[0]], x[0]),

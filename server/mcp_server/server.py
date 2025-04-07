@@ -72,8 +72,7 @@ class MCPServer:
         if name not in self.config["tools"]:
             raise McpError(
                 ErrorData(
-                    code=INVALID_PARAMS,
-                    message=f"Tool '{name}' isn't available on this server anymore",
+                    code=INVALID_PARAMS, message=f"Tool '{name}' isn't available on this server anymore"
                 )
             )
         if "method" not in self.config["tools"][name]:
@@ -116,9 +115,7 @@ class MCPServer:
                 ],
             )
 
-            config = UvicornConfig(
-                app=starlette_app, host=sse_host, port=int(sse_port), log_level="info"
-            )
+            config = UvicornConfig(app=starlette_app, host=sse_host, port=int(sse_port), log_level="info")
             server_instance = UvicornServer(config)
             await server_instance.serve()
         else:

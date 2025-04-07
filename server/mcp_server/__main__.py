@@ -5,6 +5,8 @@ of the User-Agent string for HTTP requests. The server runs asynchronously to ha
 concurrent requests efficiently.
 """
 
+from __future__ import annotations
+
 from argparse import ArgumentParser
 from asyncio import CancelledError, run as asyncio_run
 from contextlib import suppress as contextlib_suppress
@@ -14,27 +16,36 @@ from pathlib import Path
 from yaml import safe_load as yaml_safe_load
 
 from .server import MCPServer
-from .tools import tool_python, tool_web
+from .tools import tool_search, tool_web
 
 
 def main() -> None:
     """Provide command-line entrypoint for the MCP fetch server."""
-    parser = ArgumentParser(description="Give a model the ability to make web requests")
+    parser = ArgumentParser(description="Give your LLM access to external tools")
+    parser.add_argument("--sandbox", type=str, help="TCP host:port pair (e.g. mcp-sandbox:8080)")
     parser.add_argument("--sse-host", type=str, help="SSE listening address (e.g. 0.0.0.0)")
     parser.add_argument("--sse-port", type=int, help="SSE listening port (e.g. 3001)")
     parser.add_argument("--user-agent", type=str, help="Custom User-Agent string")
+    parser.add_argument("--searxng-query-url", type=str, help="URL for SearXNG search endpoint")
     args = parser.parse_args()
 
+    if args.sandbox:
+        os_environ["SANDBOX"] = args.sandbox
     if args.sse_host:
         os_environ["SSE_HOST"] = args.sse_host
     if args.sse_port:
         os_environ["SSE_PORT"] = str(args.sse_port)
     if args.user_agent:
         os_environ["USER_AGENT"] = args.user_agent
+    if args.searxng_query_url:
+        os_environ["SEARXNG_QUERY_URL"] = args.searxng_query_url
 
     config = yaml_safe_load(Path("tools.yaml").read_text(encoding="utf-8"))
-    config["tools"]["python"]["method"] = tool_python
+    config["tools"]["search"]["method"] = tool_search
     config["tools"]["web"]["method"] = tool_web
+    # Remove the sandbox tool if there's no sandbox
+    if not os_environ.get("SANDBOX") and "sandbox" in config["tools"]:
+        del config["tools"]["sandbox"]
     server = MCPServer(config)
     with contextlib_suppress(KeyboardInterrupt, CancelledError):
         asyncio_run(server.serve())

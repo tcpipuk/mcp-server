@@ -1,4 +1,5 @@
 name: Build MCP Server
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -6,10 +7,16 @@ concurrency:
 on:
   pull_request:
   push:
-    paths-ignore:
-      - "**/*.md"
-      - "docs/**"
+    paths:
+      - "server/**"
+      - ".github/workflows/build-server.yml"
   workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+  pull-requests: write
+  actions: write
 
 jobs:
   test:
@@ -28,9 +35,10 @@ jobs:
           DOCKER_BUILD_SUMMARY: false
           DOCKER_BUILD_RECORD_UPLOAD: false
         with:
-          context: .
+          context: server
           load: true
-          build-args: BUILD_ENV=dev
+          build-args: |
+            BUILD_ENV=dev
           tags: mcp-server:test
           cache-from: type=gha
           cache-to: type=gha,mode=max
@@ -39,9 +47,11 @@ jobs:
         run: |
           set -o pipefail
           docker run --rm -e BUILD_ENV=dev mcp-server:test | tee pytest_output.txt
-          echo '```' >> $GITHUB_STEP_SUMMARY
-          cat pytest_output.txt >> $GITHUB_STEP_SUMMARY
-          echo '```' >> $GITHUB_STEP_SUMMARY
+          exit_code=${PIPESTATUS[0]}
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          cat pytest_output.txt >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          exit $exit_code
 
   build:
     name: Docker build
@@ -60,7 +70,7 @@ jobs:
         with:
           context: workflow
           images: |
-            name=ghcr.io/${{ github.repository }}
+            name=ghcr.io/${{ github.repository }}/server
           tags: |
             type=raw,value=latest,enable={{is_default_branch}}
             type=ref,event=branch
@@ -81,9 +91,11 @@ jobs:
         env:
           DOCKER_BUILD_RECORD_UPLOAD: false
         with:
-          context: .
+          context: server
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            BUILD_ENV=prod
           cache-from: type=gha
           cache-to: type=gha,mode=max

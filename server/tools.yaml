@@ -1,0 +1,65 @@
+tools:
+  search:
+    description: >
+      Your knowledge is limited and out of date. Use this tool to access the SearXNG search
+      engine to find current information, specific resources, or perform calculations.
+      Use this tool when the user asks about recent events, technical details, or to find
+      content like images, news, code, etc, or your task requires calculations or random data.
+    inputSchema:
+      type: object
+      properties:
+        q:
+          type: string
+          description: >
+            SearXNG search query. Use `!` prefixes for categories/engines (chainable):
+            - General: `!news`, `!map`, `!images`
+            - Multimedia: `!videos` (PeerTube/Vimeo/YouTube), `!music` (Bandcamp/SoundCloud/YouTube), `!lyrics`, `!yt` (YouTube specific)
+            - Files: `!files` (books/apps/torrents), `!1337x` or `!kc` or `!solid` or `!tpb` (Torrents), `!gpa` (Google Play), `!wcf` (Wikimedia Commons)
+            - IT/Dev: `!it` (all tech), `!repos` (Git repos), `!dh` (Docker Hub), `!q&a` (Stack Ex.), `!mdn` (Web Docs), `!software_wikis` (Linux/dev wikis)
+            - Packages: `!pypi` (Python), `!npm` (Node), `!crates` or `!lrs` (Rust), `!alp` (Alpine Linux)
+            - Science/Compute: `!scientific_publications` (arXiv/PubMed/etc), `!wa` (WolframAlpha calculations/facts/definitions)
+            - Social: `!re` (Reddit)
+            Special keywords (no `!`):
+            - Stats: `avg 1 2 3`, `max`, `min`, `sum`, `prod`
+            - Random: `random uuid`, `random int`, `random color`
+            - Hash: `sha512 text`
+        time_range:
+          type: string
+          enum: ["day", "month", "year"]
+          description: Filter results by time range if supported
+        safesearch:
+          type: integer
+          enum: [0, 1, 2]
+          description: Safe search level (0=Off, 1=Moderate, 2=Strict) if supported
+          default: 1
+      required: ["q"]
+  web:
+    description: >
+      This tool lets you read real web content to enhance your responses. Use this tool to:
+      - Check current documentation when answering questions
+      - Verify information before making recommendations
+      - Fetch example code or data to confirm solutions
+      - Navigate through documentation using extracted links
+    inputSchema:
+      type: object
+      properties:
+        url:
+          type: string
+          description: URL to access - could be a web page, API endpoint, or a file on GitHub, etc.
+        mode:
+          type: string
+          enum:
+            - markdown
+            - raw
+            - links
+          description: >
+            How to process the content:
+            - `markdown` converts HTML to clean markdown (best for reading)
+            - `raw` gets unprocessed content (for non-HTML such as code, JSON, etc)
+            - `links` extracts hyperlinks from a webpage with anchor text
+          default: markdown
+        max_length:
+          type: integer
+          description: Limit response length in characters (zero means no limit)
+          default: 0
+      required: ["url"]
