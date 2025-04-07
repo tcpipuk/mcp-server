@@ -20,18 +20,15 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 FROM python:3.13-slim-bookworm AS runtime
 WORKDIR /app
 
-# Set default build environment and optimisation level
-ARG BUILD_ENV=prod \
-  PYTHON_OPTIMIZE=2
+# Set default build environment
+ARG BUILD_ENV=prod
 
 # Install minimal system dependencies and create runtime user
 RUN apt-get update \
   && apt-get install -y --no-install-recommends socat \
   && rm -rf /var/lib/apt/lists/* \
   && groupadd -g 1000 appuser \
-  && useradd -u 1000 -g 1000 -m appuser \
-  && mkdir -m 777 -p /app/memory_profiles \
-  && chown appuser:appuser /app/memory_profiles
+  && useradd -u 1000 -g 1000 -m appuser
 
 # Copy only necessary files from build stage
 COPY --from=uv --chown=appuser:appuser /app/ .
@@ -42,7 +39,6 @@ COPY --from=uv --chown=appuser:appuser /app/ .
 USER appuser
 ENV PATH="/app/.venv/bin:$PATH" \
   PYTHONDONTWRITEBYTECODE=1 \
-  PYTHONOPTIMIZE=${PYTHON_OPTIMIZE} \
   PYTHONUNBUFFERED=1
 
 # Use wrapper script to handle startup
