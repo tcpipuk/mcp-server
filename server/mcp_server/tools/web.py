@@ -85,11 +85,12 @@ class WebProcessor:
             case ProcessingMode.MARKDOWN:
                 extracted = trafilatura_extract(
                     content,
-                    output_format="markdown",
+                    favor_recall=True,
                     include_formatting=True,
                     include_images=True,
                     include_links=True,
                     include_tables=True,
+                    output_format="markdown",
                     with_metadata=True,
                 ) or add_error(content, "Extraction to markdown failed; returning raw content", append=False)
 

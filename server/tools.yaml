@@ -1,84 +1,69 @@
 tools:
-  sandbox:
+  search:
     description: >
-      A persistent bash env that helps you do real work instead of guessing.
-      Use this to get exact answers, run actual checks, and build working
-      solutions instead of just describing them.
-
-      The sandbox has:
-      - Python 3.13 + pandas/numpy for exact data work and fast math
-      - Dev tools (git, ruff) to check and fix code
-      - Net tools (curl, dig, requests, bs4) to debug issues
-      - System utils (ping, screen, tree) to explore and run tasks
-      - Persistent /workspace dir to build complex solutions
-
-      When to use:
-      - Get real numbers instead of guessing from memory
-      - Run code to prove it works vs theory
-      - Test actual behavior vs remembered specs
-      - Build and test live vs just listing steps
-      - Use screen to handle long jobs while doing other work
-
-      Note: For general web checks use the 'web' tool - use this sandbox tool
-      for tasks that can't be performed by that one.
+      Your knowledge is limited and out of date. Use this tool to access the SearXNG search
+      engine to find current information, specific resources, or perform calculations.
+      Use this tool when the user asks about recent events, technical details, or to find
+      content like images, news, code, etc, or your task requires calculations or random data.
     inputSchema:
       type: object
       properties:
-        commands:
+        q:
           type: string
           description: >
-            Commands to run. Multi-line input runs as given.
-            For Python, use 'python3' or make .py files.
-
-            Best practices:
-            - Save code to files vs direct run for better fixes
-            - Use pandas/numpy for fast data work
-            - Check code: `ruff check --select ALL --ignore COM812,CPY,D203,D213,FBT,RUF029,RUF100 --fix --unsafe-fixes script.py`
-            - Fix style: `ruff format --line-length 100 --skip-magic-trailing-comma true script.py`
-
-            Workspace tips:
-            - Work in /workspace (home dir)
-            - Make clear dirs per task
-            - Keep notes in /workspace/notes
-            - Clean old files/screens
-            - Use clear screen names
-        time_limit:
+            SearXNG search query. Use `!` prefixes for categories/engines (chainable):
+            - General: `!news`, `!map`, `!images`
+            - Multimedia: `!videos` (PeerTube/Vimeo/YouTube), `!music` (Bandcamp/SoundCloud/YouTube), `!lyrics`, `!yt` (YouTube specific)
+            - Files: `!files` (books/apps/torrents), `!1337x` or `!kc` or `!solid` or `!tpb` (Torrents), `!gpa` (Google Play), `!wcf` (Wikimedia Commons)
+            - IT/Dev: `!it` (all tech), `!repos` (Git repos), `!dh` (Docker Hub), `!q&a` (Stack Ex.), `!mdn` (Web Docs), `!software_wikis` (Linux/dev wikis)
+            - Packages: `!pypi` (Python), `!npm` (Node), `!crates` or `!lrs` (Rust), `!alp` (Alpine Linux)
+            - Science/Compute: `!scientific_publications` (arXiv/PubMed/etc), `!wa` (WolframAlpha calculations/facts/definitions)
+            - Social: `!re` (Reddit)
+            Special keywords (no `!`):
+            - Stats: `avg 1 2 3`, `max`, `min`, `sum`, `prod`
+            - Random: `random uuid`, `random int`, `random color`
+            - Hash: `sha512 text`
+        pageno:
           type: integer
-          default: 5
-          description: >
-            Secs to wait for output. Keep short (2-5s) and split big jobs into
-            small steps for better feedback, as tool waits full time.
-      required: ["commands"]
-
+          description: Page number for results pagination
+          default: 1
+        time_range:
+          type: string
+          enum: ["day", "month", "year"]
+          description: Filter results by time range if supported
+        safesearch:
+          type: integer
+          enum: [0, 1, 2]
+          description: Safe search level (0=Off, 1=Moderate, 2=Strict) if supported
+          default: 1
+      required: ["q"]
   web:
     description: >
-      Your knowledge is out of date and potentially flawed. This tool lets you
-      access and process web content to enhance your responses. Use this tool to:
+      This tool lets you read real web content to enhance your responses. Use this tool to:
       - Check current documentation when answering questions
-      - Fetch example code or data to demonstrate solutions
-      - Navigate through documentation using extracted links
       - Verify information before making recommendations
+      - Fetch example code or data to confirm solutions
+      - Navigate through documentation using extracted links
     inputSchema:
       type: object
       properties:
         url:
           type: string
-          description: URL to access - could be a web page, API endpoint, or a
-            file on GitHub, etc.
+          description: URL to access - could be a web page, API endpoint, or a file on GitHub, etc.
         mode:
           type: string
           enum:
             - markdown
             - raw
             - links
-          default: markdown
           description: >
             How to process the content:
             - `markdown` converts HTML to clean markdown (best for reading)
             - `raw` gets unprocessed content (for non-HTML such as code, JSON, etc)
             - `links` extracts hyperlinks from a webpage with anchor text
+          default: markdown
         max_length:
           type: integer
-          default: 0
           description: Limit response length in characters (zero means no limit)
+          default: 0
       required: ["url"]
