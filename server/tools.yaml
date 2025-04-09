@@ -1,20 +1,19 @@
 tools:
   search:
     description: >
-      Your knowledge is limited and out of date. Use this tool to access the SearXNG search
-      engine to find current information, specific resources, or perform calculations.
-      Use this tool when the user asks about recent events, technical details, or to find
-      content like images, news, code, etc, or your task requires calculations or random data.
-      Instead of telling the user about suggested search queries, you can make further narrower
-      requests if the first result does not clearly answer the user's query.
+      Use this tool to access SearXNG to search the internet for current information or to perform
+      calculations. Use this tool when the user asks about recent events, technical details, to find
+      content, or your task requires calculations. If the search summary doesn't clearly answer the
+      question, you can read one of the search results by providing the URL to the `web` tool, or use
+      this `search` tool again to make further narrower requests to gain context to help your answer.
     inputSchema:
       type: object
       properties:
         q:
           type: string
-          description: >
-            SearXNG search query. Use `!` prefixes for categories/engines (chainable):
-            - General: `!news`, `!map`, `!images`
+          description: |
+            SearXNG search query. Use `!` prefixes for categories/engines (chainable to search multiple sources) followed by your query:
+            - General: `!news <query>`, `!map <place>`, `!images <keywords>`
             - Multimedia: `!videos` (PeerTube/Vimeo/YouTube), `!music` (Bandcamp/SoundCloud/YouTube), `!lyrics`, `!yt` (YouTube specific)
             - Files: `!files` (books/apps/torrents), `!1337x` or `!kc` or `!solid` or `!tpb` (Torrents), `!gpa` (Google Play), `!wcf` (Wikimedia Commons)
             - IT/Dev: `!it` (all tech), `!repos` (Git repos), `!dh` (Docker Hub), `!q&a` (Stack Ex.), `!mdn` (Web Docs), `!software_wikis` (Linux/dev wikis)
@@ -37,14 +36,10 @@ tools:
       required: ["q"]
   web:
     description: >
-      Your knowledge has a cut-off date and may be incomplete. Use this tool to access live web
-      pages using their URL. This is crucial for providing users with up-to-date, accurate
-      information. Key uses include:
-      - Verifying facts or checking the latest documentation before answering.
-      - Retrieving specific information, examples, or data from a known URL.
-      - Reading the actual content of web pages discovered via the 'search' tool to give a
-        more detailed and comprehensive answer to the user.
-      - Using 'links' mode to extract hyperlinks to understand websites and navigate them.
+      Use this tool to access live web pages using their URL. This is crucial for providing users
+      with accurate information from up-to-date sources. You will typically want to use `markdown`
+      to read content, or use 'links' mode to extract hyperlinks to find related pages on a site,
+      e.g. for navigating documentation.
     inputSchema:
       type: object
       properties:
@@ -57,9 +52,11 @@ tools:
             - markdown
             - raw
             - links
-          description: >
-            Processing mode: 'markdown' (default) for clean readable text, 'raw' for
-            unprocessed content (code, JSON, etc), 'links' to list all hyperlinks.
+          description: |
+            Processing mode:
+            - `markdown` (default) for clean readable text
+            - `links` to list all hyperlinks
+            - `raw` for unprocessed content (code, JSON, etc)            
           default: markdown
         max_length:
           type: integer
